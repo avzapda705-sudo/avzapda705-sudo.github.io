@@ -130,8 +130,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 19
-                  versionName "3.1"
+                  versionCode 21
+                  versionName "3.3"
               }
 
               compileOptions {
@@ -196,6 +196,8 @@ jobs:
           import android.content.Intent;
           import android.net.Uri;
           import android.os.Bundle;
+          import android.os.Handler;
+          import android.os.Looper;
           import android.util.TypedValue;
           import android.view.Gravity;
           import android.webkit.JavascriptInterface;
@@ -220,6 +222,9 @@ jobs:
               private Banner bottomBanner;
               private FrameLayout root;
               private StartAppAd rewardedAd;
+              private Handler autoAdHandler = new Handler(Looper.getMainLooper());
+              private Runnable autoAdRunnable;
+              private boolean isAdShowing = false;
 
               // Start.io App ID
               private static final String STARTAPP_APP_ID = "208761301";
@@ -228,7 +233,7 @@ jobs:
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  // Initialize Start.io without privacy popup
+                  // Initialize Start.io without privacy prompt
                   StartAppSDK.init(this, STARTAPP_APP_ID, false);
                   StartAppSDK.enableReturnAds(false);
                   StartAppSDK.setUserConsent(this, "pas", System.currentTimeMillis(), true);
@@ -281,6 +286,7 @@ jobs:
                   webParams.bottomMargin = bannerHeightPx;
                   root.addView(webView, webParams);
 
+                  // Bottom Banner Ad
                   bottomBanner = new Banner(this);
                   FrameLayout.LayoutParams bannerParams = new FrameLayout.LayoutParams(
                           FrameLayout.LayoutParams.MATCH_PARENT,
@@ -290,6 +296,22 @@ jobs:
                   root.addView(bottomBanner, bannerParams);
 
                   setContentView(root);
+
+                  // Background Auto Interstitial Ads (Runs every 45 seconds so it doesn't disturb too violently)
+                  startAutoBackgroundAds();
+              }
+
+              private void startAutoBackgroundAds() {
+                  autoAdRunnable = new Runnable() {
+                      @Override
+                      public void run() {
+                          if (!isAdShowing) {
+                              StartAppAd.showAd(MainActivity.this);
+                          }
+                          autoAdHandler.postDelayed(this, 45000); // 45 seconds timer
+                      }
+                  };
+                  autoAdHandler.postDelayed(autoAdRunnable, 20000); // First ad after 20 seconds
               }
 
               private void preloadRewardedAd() {
@@ -305,10 +327,12 @@ jobs:
               }
 
               public class AdBridge {
+                  // For Watch Video, Spin & Claim Coins (Rewards)
                   @JavascriptInterface
                   public void showRewarded() {
                       runOnUiThread(() -> {
                           if (rewardedAd != null && rewardedAd.isReady()) {
+                              isAdShowing = true;
                               rewardedAd.setVideoListener(new VideoListener() {
                                   @Override
                                   public void onVideoCompleted() {
@@ -319,6 +343,7 @@ jobs:
                               rewardedAd.showAd(new AdDisplayListener() {
                                   @Override
                                   public void adHidden(Ad ad) {
+                                      isAdShowing = false;
                                       preloadRewardedAd();
                                   }
 
@@ -330,57 +355,24 @@ jobs:
 
                                   @Override
                                   public void adNotDisplayed(Ad ad) {
-                                      fallbackShowAd();
+                                      isAdShowing = false;
+                                      preloadRewardedAd();
                                   }
                               });
                           } else {
-                              // If video is still caching, show fullscreen ad immediately so user isn't stuck
-                              fallbackShowAd();
+                              Toast.makeText(MainActivity.this, "Video loading... please wait", Toast.LENGTH_SHORT).show();
+                              preloadRewardedAd();
                           }
                       });
                   }
 
+                  // For instant interstitial background trigger
                   @JavascriptInterface
                   public void showInterstitial() {
                       runOnUiThread(() -> {
                           StartAppAd.showAd(MainActivity.this);
                       });
                   }
-              }
-
-              private void fallbackShowAd() {
-                  StartAppAd fallbackAd = new StartAppAd(MainActivity.this);
-                  fallbackAd.loadAd(StartAppAd.AdMode.AUTOMATIC, new AdEventListener() {
-                      @Override
-                      public void onReceiveAd(Ad ad) {
-                          fallbackAd.showAd(new AdDisplayListener() {
-                              @Override
-                              public void adHidden(Ad ad) {
-                                  triggerRewardInWeb();
-                                  preloadRewardedAd();
-                              }
-
-                              @Override
-                              public void adDisplayed(Ad ad) {}
-
-                              @Override
-                              public void adClicked(Ad ad) {}
-
-                              @Override
-                              public void adNotDisplayed(Ad ad) {
-                                  triggerRewardInWeb();
-                                  preloadRewardedAd();
-                              }
-                          });
-                      }
-
-                      @Override
-                      public void onFailedToReceiveAd(Ad ad) {
-                          Toast.makeText(MainActivity.this, "Network slow. Rewarding coins...", Toast.LENGTH_SHORT).show();
-                          triggerRewardInWeb();
-                          preloadRewardedAd();
-                      }
-                  });
               }
 
               private void triggerRewardInWeb() {
@@ -392,6 +384,14 @@ jobs:
                               )
                       );
                   }
+              }
+
+              @Override
+              protected void onDestroy() {
+                  if (autoAdHandler != null && autoAdRunnable != null) {
+                      autoAdHandler.removeCallbacks(autoAdRunnable);
+                  }
+                  super.onDestroy();
               }
 
               @Override
