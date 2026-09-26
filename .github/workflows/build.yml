@@ -130,8 +130,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 18
-                  versionName "3.0"
+                  versionCode 19
+                  versionName "3.1"
               }
 
               compileOptions {
@@ -206,6 +206,7 @@ jobs:
           import android.widget.FrameLayout;
           import android.widget.Toast;
 
+          import com.startapp.sdk.adsbase.Ad;
           import com.startapp.sdk.adsbase.StartAppAd;
           import com.startapp.sdk.adsbase.StartAppSDK;
           import com.startapp.sdk.adsbase.adlisteners.AdDisplayListener;
@@ -227,12 +228,13 @@ jobs:
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  // Initialize Start.io SDK
+                  // Initialize Start.io without privacy popup
                   StartAppSDK.init(this, STARTAPP_APP_ID, false);
                   StartAppSDK.enableReturnAds(false);
+                  StartAppSDK.setUserConsent(this, "pas", System.currentTimeMillis(), true);
 
                   rewardedAd = new StartAppAd(this);
-                  loadRewardedAd();
+                  preloadRewardedAd();
 
                   root = new FrameLayout(this);
 
@@ -279,7 +281,6 @@ jobs:
                   webParams.bottomMargin = bannerHeightPx;
                   root.addView(webView, webParams);
 
-                  // Load Banner
                   bottomBanner = new Banner(this);
                   FrameLayout.LayoutParams bannerParams = new FrameLayout.LayoutParams(
                           FrameLayout.LayoutParams.MATCH_PARENT,
@@ -291,14 +292,14 @@ jobs:
                   setContentView(root);
               }
 
-              private void loadRewardedAd() {
+              private void preloadRewardedAd() {
                   if (rewardedAd != null) {
                       rewardedAd.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, new AdEventListener() {
                           @Override
-                          public void onReceiveAd(com.startapp.sdk.adsbase.Ad ad) {}
+                          public void onReceiveAd(Ad ad) {}
 
                           @Override
-                          public void onFailedToReceiveAd(com.startapp.sdk.adsbase.Ad ad) {}
+                          public void onFailedToReceiveAd(Ad ad) {}
                       });
                   }
               }
@@ -317,25 +318,24 @@ jobs:
 
                               rewardedAd.showAd(new AdDisplayListener() {
                                   @Override
-                                  public void adHidden(com.startapp.sdk.adsbase.Ad ad) {
-                                      loadRewardedAd();
+                                  public void adHidden(Ad ad) {
+                                      preloadRewardedAd();
                                   }
 
                                   @Override
-                                  public void adDisplayed(com.startapp.sdk.adsbase.Ad ad) {}
+                                  public void adDisplayed(Ad ad) {}
 
                                   @Override
-                                  public void adClicked(com.startapp.sdk.adsbase.Ad ad) {}
+                                  public void adClicked(Ad ad) {}
 
                                   @Override
-                                  public void adNotDisplayed(com.startapp.sdk.adsbase.Ad ad) {
-                                      Toast.makeText(MainActivity.this, "Ad failed to display. Retrying...", Toast.LENGTH_SHORT).show();
-                                      loadRewardedAd();
+                                  public void adNotDisplayed(Ad ad) {
+                                      fallbackShowAd();
                                   }
                               });
                           } else {
-                              Toast.makeText(MainActivity.this, "Loading video ad... Please wait", Toast.LENGTH_SHORT).show();
-                              loadRewardedAd();
+                              // If video is still caching, show fullscreen ad immediately so user isn't stuck
+                              fallbackShowAd();
                           }
                       });
                   }
@@ -346,6 +346,41 @@ jobs:
                           StartAppAd.showAd(MainActivity.this);
                       });
                   }
+              }
+
+              private void fallbackShowAd() {
+                  StartAppAd fallbackAd = new StartAppAd(MainActivity.this);
+                  fallbackAd.loadAd(StartAppAd.AdMode.AUTOMATIC, new AdEventListener() {
+                      @Override
+                      public void onReceiveAd(Ad ad) {
+                          fallbackAd.showAd(new AdDisplayListener() {
+                              @Override
+                              public void adHidden(Ad ad) {
+                                  triggerRewardInWeb();
+                                  preloadRewardedAd();
+                              }
+
+                              @Override
+                              public void adDisplayed(Ad ad) {}
+
+                              @Override
+                              public void adClicked(Ad ad) {}
+
+                              @Override
+                              public void adNotDisplayed(Ad ad) {
+                                  triggerRewardInWeb();
+                                  preloadRewardedAd();
+                              }
+                          });
+                      }
+
+                      @Override
+                      public void onFailedToReceiveAd(Ad ad) {
+                          Toast.makeText(MainActivity.this, "Network slow. Rewarding coins...", Toast.LENGTH_SHORT).show();
+                          triggerRewardInWeb();
+                          preloadRewardedAd();
+                      }
+                  });
               }
 
               private void triggerRewardInWeb() {
