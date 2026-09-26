@@ -130,8 +130,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 21
-                  versionName "3.3"
+                  versionCode 22
+                  versionName "3.4"
               }
 
               compileOptions {
@@ -193,6 +193,7 @@ jobs:
           package com.watchtoearn.app;
 
           import android.app.Activity;
+          import android.app.ProgressDialog;
           import android.content.Intent;
           import android.net.Uri;
           import android.os.Bundle;
@@ -206,7 +207,6 @@ jobs:
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
           import android.widget.FrameLayout;
-          import android.widget.Toast;
 
           import com.startapp.sdk.adsbase.Ad;
           import com.startapp.sdk.adsbase.StartAppAd;
@@ -222,18 +222,17 @@ jobs:
               private Banner bottomBanner;
               private FrameLayout root;
               private StartAppAd rewardedAd;
-              private Handler autoAdHandler = new Handler(Looper.getMainLooper());
-              private Runnable autoAdRunnable;
-              private boolean isAdShowing = false;
+              private ProgressDialog progressDialog;
+              private Handler handler = new Handler(Looper.getMainLooper());
+              private Runnable bgAdRunnable;
+              private boolean isAdDisplaying = false;
 
-              // Start.io App ID
               private static final String STARTAPP_APP_ID = "208761301";
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  // Initialize Start.io without privacy prompt
                   StartAppSDK.init(this, STARTAPP_APP_ID, false);
                   StartAppSDK.enableReturnAds(false);
                   StartAppSDK.setUserConsent(this, "pas", System.currentTimeMillis(), true);
@@ -286,7 +285,6 @@ jobs:
                   webParams.bottomMargin = bannerHeightPx;
                   root.addView(webView, webParams);
 
-                  // Bottom Banner Ad
                   bottomBanner = new Banner(this);
                   FrameLayout.LayoutParams bannerParams = new FrameLayout.LayoutParams(
                           FrameLayout.LayoutParams.MATCH_PARENT,
@@ -297,21 +295,20 @@ jobs:
 
                   setContentView(root);
 
-                  // Background Auto Interstitial Ads (Runs every 45 seconds so it doesn't disturb too violently)
-                  startAutoBackgroundAds();
+                  setupBackgroundAds();
               }
 
-              private void startAutoBackgroundAds() {
-                  autoAdRunnable = new Runnable() {
+              private void setupBackgroundAds() {
+                  bgAdRunnable = new Runnable() {
                       @Override
                       public void run() {
-                          if (!isAdShowing) {
+                          if (!isAdDisplaying && !isFinishing()) {
                               StartAppAd.showAd(MainActivity.this);
                           }
-                          autoAdHandler.postDelayed(this, 45000); // 45 seconds timer
+                          handler.postDelayed(this, 30000); // Dar 30 seconde background ad check karse
                       }
                   };
-                  autoAdHandler.postDelayed(autoAdRunnable, 20000); // First ad after 20 seconds
+                  handler.postDelayed(bgAdRunnable, 15000); // Paheli ad 15 second pachhi aavse
               }
 
               private void preloadRewardedAd() {
@@ -326,53 +323,133 @@ jobs:
                   }
               }
 
+              private void dismissLoading() {
+                  if (progressDialog != null && progressDialog.isShowing()) {
+                      try {
+                          progressDialog.dismiss();
+                      } catch (Exception ignored) {}
+                  }
+              }
+
               public class AdBridge {
-                  // For Watch Video, Spin & Claim Coins (Rewards)
                   @JavascriptInterface
                   public void showRewarded() {
                       runOnUiThread(() -> {
+                          if (isFinishing()) return;
+
+                          // Pehla check kare ke video loaded chhe ke nahi
                           if (rewardedAd != null && rewardedAd.isReady()) {
-                              isAdShowing = true;
-                              rewardedAd.setVideoListener(new VideoListener() {
-                                  @Override
-                                  public void onVideoCompleted() {
-                                      triggerRewardInWeb();
-                                  }
-                              });
-
-                              rewardedAd.showAd(new AdDisplayListener() {
-                                  @Override
-                                  public void adHidden(Ad ad) {
-                                      isAdShowing = false;
-                                      preloadRewardedAd();
-                                  }
-
-                                  @Override
-                                  public void adDisplayed(Ad ad) {}
-
-                                  @Override
-                                  public void adClicked(Ad ad) {}
-
-                                  @Override
-                                  public void adNotDisplayed(Ad ad) {
-                                      isAdShowing = false;
-                                      preloadRewardedAd();
-                                  }
-                              });
-                          } else {
-                              Toast.makeText(MainActivity.this, "Video loading... please wait", Toast.LENGTH_SHORT).show();
-                              preloadRewardedAd();
+                              playVideoAd();
+                              return;
                           }
+
+                          // Loading dialogue show karvo
+                          progressDialog = new ProgressDialog(MainActivity.this);
+                          progressDialog.setMessage("Ad loading... please wait");
+                          progressDialog.setCancelable(false);
+                          progressDialog.show();
+
+                          // Video load karvano try
+                          rewardedAd.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, new AdEventListener() {
+                              @Override
+                              public void onReceiveAd(Ad ad) {
+                                  dismissLoading();
+                                  playVideoAd();
+                              }
+
+                              @Override
+                              public void onFailedToReceiveAd(Ad ad) {
+                                  // Video na male to instant full-screen ad show karvi
+                                  loadAndShowFallbackAd();
+                              }
+                          });
+
+                          // Max 4 second wait, pachi direct fallback
+                          handler.postDelayed(() -> {
+                              if (progressDialog != null && progressDialog.isShowing()) {
+                                  loadAndShowFallbackAd();
+                              }
+                          }, 4000);
                       });
                   }
 
-                  // For instant interstitial background trigger
                   @JavascriptInterface
                   public void showInterstitial() {
                       runOnUiThread(() -> {
-                          StartAppAd.showAd(MainActivity.this);
+                          if (!isFinishing()) {
+                              StartAppAd.showAd(MainActivity.this);
+                          }
                       });
                   }
+              }
+
+              private void playVideoAd() {
+                  isAdDisplaying = true;
+                  rewardedAd.setVideoListener(new VideoListener() {
+                      @Override
+                      public void onVideoCompleted() {
+                          triggerRewardInWeb();
+                      }
+                  });
+
+                  rewardedAd.showAd(new AdDisplayListener() {
+                      @Override
+                      public void adHidden(Ad ad) {
+                          isAdDisplaying = false;
+                          preloadRewardedAd();
+                      }
+
+                      @Override
+                      public void adDisplayed(Ad ad) {}
+
+                      @Override
+                      public void adClicked(Ad ad) {}
+
+                      @Override
+                      public void adNotDisplayed(Ad ad) {
+                          isAdDisplaying = false;
+                          loadAndShowFallbackAd();
+                      }
+                  });
+              }
+
+              private void loadAndShowFallbackAd() {
+                  dismissLoading();
+                  StartAppAd interstitialAd = new StartAppAd(MainActivity.this);
+                  interstitialAd.loadAd(StartAppAd.AdMode.AUTOMATIC, new AdEventListener() {
+                      @Override
+                      public void onReceiveAd(Ad ad) {
+                          isAdDisplaying = true;
+                          interstitialAd.showAd(new AdDisplayListener() {
+                              @Override
+                              public void adHidden(Ad ad) {
+                                  isAdDisplaying = false;
+                                  triggerRewardInWeb();
+                                  preloadRewardedAd();
+                              }
+
+                              @Override
+                              public void adDisplayed(Ad ad) {}
+
+                              @Override
+                              public void adClicked(Ad ad) {}
+
+                              @Override
+                              public void adNotDisplayed(Ad ad) {
+                                  isAdDisplaying = false;
+                                  triggerRewardInWeb();
+                                  preloadRewardedAd();
+                              }
+                          });
+                      }
+
+                      @Override
+                      public void onFailedToReceiveAd(Ad ad) {
+                          isAdDisplaying = false;
+                          triggerRewardInWeb();
+                          preloadRewardedAd();
+                      }
+                  });
               }
 
               private void triggerRewardInWeb() {
@@ -388,8 +465,9 @@ jobs:
 
               @Override
               protected void onDestroy() {
-                  if (autoAdHandler != null && autoAdRunnable != null) {
-                      autoAdHandler.removeCallbacks(autoAdRunnable);
+                  dismissLoading();
+                  if (handler != null && bgAdRunnable != null) {
+                      handler.removeCallbacks(bgAdRunnable);
                   }
                   super.onDestroy();
               }
