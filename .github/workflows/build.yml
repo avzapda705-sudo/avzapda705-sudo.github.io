@@ -121,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 59
-                  versionName "7.5"
+                  versionCode 60
+                  versionName "7.6"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -185,6 +185,7 @@ jobs:
           import android.view.Gravity;
           import android.view.View;
           import android.view.Window;
+          import android.webkit.CookieManager;
           import android.webkit.JavascriptInterface;
           import android.webkit.SslErrorHandler;
           import android.webkit.WebChromeClient;
@@ -201,7 +202,7 @@ jobs:
               private WebView mainWebView;
               private Dialog adDialog;
               private WebView adWebView;
-              private static final String AD_URL = "https://omg10.com/4/11903025";
+              private static final String BASE_AD_URL = "https://omg10.com/4/11903025";
               private static final String VERIFIED_DOMAIN = "https://avzapda705-sudo.github.io/";
 
               @Override
@@ -258,7 +259,7 @@ jobs:
 
                   // 2. MAIN WEBVIEW
                   mainWebView = new WebView(this);
-                  setupWeb(mainWebView);
+                  setupWeb(mainWebView, false);
                   mainWebView.setWebViewClient(new InternalClient());
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
 
@@ -314,7 +315,7 @@ jobs:
               }
 
               @SuppressLint("SetJavaScriptEnabled")
-              private void setupWeb(WebView wv) {
+              private void setupWeb(WebView wv, boolean isAdView) {
                   WebSettings s = wv.getSettings();
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
@@ -325,16 +326,18 @@ jobs:
                   s.setJavaScriptCanOpenWindowsAutomatically(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                   s.setUserAgentString("Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
+
+                  if (isAdView) {
+                      s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+                  }
                   wv.setWebChromeClient(new WebChromeClient());
               }
 
-              // Keeps app navigation, Spin, tabs completely inside the WebView
               private class InternalClient extends WebViewClient {
                   @Override
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
-                      // Custom android intents (PlayStore links, etc.)
                       if (url.startsWith("intent://") || url.startsWith("market://")) {
                           try {
                               Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
@@ -346,12 +349,10 @@ jobs:
                           return true;
                       }
 
-                      // Load verified domain inside app
                       if (url.startsWith(VERIFIED_DOMAIN) || url.startsWith("file://")) {
                           return false;
                       }
 
-                      // Load ads or external redirects directly in webview rather than opening browser
                       view.loadUrl(url);
                       return true;
                   }
@@ -400,8 +401,14 @@ jobs:
                   l.addView(tb);
 
                   adWebView = new WebView(this);
-                  setupWeb(adWebView);
-                  // Load video ad strictly inside the popup dialog
+                  setupWeb(adWebView, true);
+
+                  // Clear session and cache completely for fresh ad inventory
+                  adWebView.clearCache(true);
+                  adWebView.clearHistory();
+                  CookieManager.getInstance().removeAllCookies(null);
+                  CookieManager.getInstance().flush();
+
                   adWebView.setWebViewClient(new WebViewClient() {
                       @Override
                       public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -413,7 +420,10 @@ jobs:
                           handler.proceed();
                       }
                   });
-                  adWebView.loadUrl(AD_URL);
+
+                  // Cache-buster random query parameter
+                  String dynamicAdUrl = BASE_AD_URL + "?cb=" + System.currentTimeMillis() + "&rnd=" + (int)(Math.random() * 10000);
+                  adWebView.loadUrl(dynamicAdUrl);
                   l.addView(adWebView, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
                   adDialog.setContentView(l);
@@ -435,6 +445,7 @@ jobs:
                       if (adDialog != null && adDialog.isShowing()) {
                           if (adWebView != null) {
                               adWebView.loadUrl("about:blank");
+                              adWebView.clearCache(true);
                               adWebView.destroy();
                               adWebView = null;
                           }
