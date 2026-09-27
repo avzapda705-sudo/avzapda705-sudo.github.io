@@ -17,6 +17,7 @@ padding-bottom:85px
 .hero{
 background:linear-gradient(135deg,#6d2fc2,#b01fc2);
 color:#fff;
+/* Status Bar / Camera Notch માટે ઉપરથી પૂરતી જગ્યા */
 padding: calc(env(safe-area-inset-top, 0px) + 48px) 24px 36px;
 border-radius:0 0 42px 42px
 }
@@ -140,7 +141,7 @@ color:#fff;
 padding:13px 18px;
 border-radius:14px;
 display:none;
-z-index:10000;
+z-index:100;
 font-weight:bold
 }
 .notice{
@@ -158,51 +159,6 @@ margin-top:14px;
 text-align:center;
 font-weight:bold;
 color:#7a5600
-}
-
-/* FULL-SCREEN IN-APP AD CONTAINER */
-#inAppAdContainer {
-position:fixed;
-top:0;
-left:0;
-width:100vw;
-height:100vh;
-background:#000;
-z-index:99999;
-display:none;
-flex-direction:column;
-}
-.ad-top-bar {
-height:55px;
-background:#111;
-color:#fff;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:0 16px;
-border-bottom:1px solid #333;
-}
-.ad-top-bar .timer-text {
-font-size:15px;
-font-weight:bold;
-color:#ffb703;
-}
-.ad-close-btn {
-background:#ff3333;
-color:#fff;
-border:none;
-padding:6px 14px;
-border-radius:8px;
-font-size:14px;
-font-weight:bold;
-cursor:pointer;
-display:none;
-}
-#adFrame {
-width:100%;
-height:calc(100vh - 55px);
-border:none;
-background:#fff;
 }
 </style>
 </head>
@@ -222,6 +178,7 @@ background:#fff;
 </div>
 </header>
 
+
 <main class="wrap">
 
 <section id="home" class="page active">
@@ -240,7 +197,7 @@ Watch a full video ad to earn 10 coins instantly.
 <button
 class="btn"
 id="watchBtn"
-onclick="openInAppAd('watch')">
+onclick="triggerAdMob('watch')">
 ▶ WATCH VIDEO AD
 </button>
 </div>
@@ -254,13 +211,14 @@ Watch an ad to unlock your daily 20–30 coin reward.
 <button
 class="btn"
 id="bonusBtn"
-onclick="openInAppAd('bonus')"
+onclick="triggerAdMob('bonus')"
 style="margin-top:18px">
 🎁 CLAIM DAILY BONUS
 </button>
 </div>
 
 </section>
+
 
 <section id="earn" class="page">
 <div class="card">
@@ -280,6 +238,7 @@ Ensure ads are watched completely to receive your coin rewards.
 </div>
 </div>
 </section>
+
 
 <section id="spin" class="page">
 <div class="card">
@@ -321,6 +280,7 @@ Watch a sponsored ad before each spin.
 </div>
 </section>
 
+
 <section id="withdraw" class="page">
 <div class="card">
 <h2>💸 Withdraw</h2>
@@ -359,6 +319,7 @@ REQUEST WITHDRAWAL
 </div>
 </section>
 
+
 <section id="referral" class="page">
 <div class="card">
 <h2>👥 Referral</h2>
@@ -389,6 +350,7 @@ style="margin-top:10px">
 </div>
 </section>
 
+
 <section id="profile" class="page">
 <div class="card">
 <h2>👤 Profile</h2>
@@ -406,6 +368,7 @@ onclick="saveProfile()">
 </section>
 
 </main>
+
 
 <nav class="nav">
 <button onclick="showPage('home')">
@@ -428,22 +391,12 @@ onclick="saveProfile()">
 </button>
 </nav>
 
-<!-- IN-APP FULLSCREEN AD MODAL -->
-<div id="inAppAdContainer">
-  <div class="ad-top-bar">
-    <span class="timer-text" id="adTimerText">Reward in: 10s</span>
-    <button class="ad-close-btn" id="adCloseBtn" onclick="closeInAppAd()">✖ Close Ad</button>
-  </div>
-  <iframe id="adFrame" src="about:blank"></iframe>
-</div>
-
 <div id="toast" class="toast"></div>
 
 <script>
 (function(){
 'use strict';
 
-var MONETAG_DIRECT_LINK = "https://omg10.com/4/11903025";
 var FIREBASE_DB_URL = "https://watchtoearn-4862d-default-rtdb.firebaseio.com/withdrawals";
 
 var rewards=[
@@ -458,7 +411,6 @@ var balance=Number(localStorage.getItem('wte_coins')||0);
 var rotation=0;
 var spinning=false;
 var pendingRewardType=null;
-var adTimerInterval=null;
 
 function $(id){
 return document.getElementById(id);
@@ -467,7 +419,8 @@ return document.getElementById(id);
 function saveBalance(){
 localStorage.setItem('wte_coins',String(balance));
 $('balance').textContent=balance;
-if($('withdrawBalance')){$('withdrawBalance').textContent=balance;}
+if($('withdrawBalance')){$('withdrawBalance').textContent=balance;
+}
 }
 
 function toast(msg){
@@ -577,71 +530,46 @@ ctx.textAlign='center';
 ctx.fillText('SPIN',cx,cy+8);
 }
 
-/* ========================================================
-   IN-APP ADS DISPLAY (INSIDE APP ITSELF, NO BROWSER POPUP)
-   ======================================================== */
+/* =====================================
+   ADMOB BRIDGE TRIGGERS
+   ===================================== */
 
-window.openInAppAd = function(type){
-  pendingRewardType = type;
+window.triggerAdMob=function(type){
+pendingRewardType=type;
 
-  var container = $('inAppAdContainer');
-  var frame = $('adFrame');
-  var timerText = $('adTimerText');
-  var closeBtn = $('adCloseBtn');
-
-  // Load Monetag direct link inside iframe
-  frame.src = MONETAG_DIRECT_LINK;
-  container.style.display = 'flex';
-  closeBtn.style.display = 'none';
-
-  var secondsLeft = 10;
-  timerText.textContent = "Reward in: " + secondsLeft + "s";
-
-  if(adTimerInterval) clearInterval(adTimerInterval);
-
-  adTimerInterval = setInterval(function(){
-    secondsLeft--;
-    if(secondsLeft > 0){
-      timerText.textContent = "Reward in: " + secondsLeft + "s";
-    } else {
-      clearInterval(adTimerInterval);
-      timerText.textContent = "🎉 Reward Unlocked!";
-      closeBtn.style.display = 'block';
-    }
-  }, 1000);
+if(window.AndroidAd && typeof window.AndroidAd.showRewarded==='function'){
+window.AndroidAd.showRewarded();
+}else{
+toast('Ad loaded in demo mode');
+setTimeout(function(){
+window.adMobRewardEarned();
+},1200);
+}
 };
 
-window.closeInAppAd = function(){
-  var container = $('inAppAdContainer');
-  var frame = $('adFrame');
-  
-  // Clean iframe
-  frame.src = "about:blank";
-  container.style.display = 'none';
+window.adMobRewardEarned=function(){
+if(!pendingRewardType) return;
 
-  // Give reward
-  if(!pendingRewardType) return;
+if(pendingRewardType==='watch'){
+balance+=10;
+saveBalance();
+$('videoText').textContent='✅ Completed +10 coins';
+toast('🎉 +10 Coins Added!');
+}
+else if(pendingRewardType==='bonus'){
+var n=20+Math.floor(Math.random()*11);
+balance+=n;
+saveBalance();
+localStorage.setItem('wte_bonus_date',day());
+$('bonusBtn').disabled=true;
+$('bonusBtn').textContent='✓ BONUS CLAIMED';
+toast('🎁 Daily Bonus +'+n+' Coins!');
+}
+else if(pendingRewardType==='spin'){
+doSpin();
+}
 
-  if(pendingRewardType === 'watch'){
-    balance += 10;
-    saveBalance();
-    $('videoText').textContent = '✅ Completed +10 coins';
-    toast('🎉 +10 Coins Added!');
-  }
-  else if(pendingRewardType === 'bonus'){
-    var n = 20 + Math.floor(Math.random()*11);
-    balance += n;
-    saveBalance();
-    localStorage.setItem('wte_bonus_date', day());
-    $('bonusBtn').disabled = true;
-    $('bonusBtn').textContent = '✓ BONUS CLAIMED';
-    toast('🎁 Daily Bonus +' + n + ' Coins!');
-  }
-  else if(pendingRewardType === 'spin'){
-    doSpin();
-  }
-
-  pendingRewardType = null;
+pendingRewardType=null;
 };
 
 /* =========================
@@ -656,7 +584,7 @@ toast('Today’s 5 spins limit reached');
 return;
 }
 
-window.openInAppAd('spin');
+triggerAdMob('spin');
 };
 
 function doSpin(){
