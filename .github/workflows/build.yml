@@ -42,7 +42,7 @@ jobs:
 
           cp index.html app/src/main/assets/index.html
 
-          # Monetag All-in-One Integration
+          # Monetag All Zones Injected into App Assets
           ALL_MONETAG_TAGS="<script src=\"https://quge5.com/88/tag.min.js\" data-zone=\"287797\" async data-cfasync=\"false\"></script><script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904980',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
           sed -i "s|</body>|${ALL_MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
 
@@ -121,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 61
-                  versionName "7.7"
+                  versionCode 62
+                  versionName "7.8"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -205,13 +205,19 @@ jobs:
               private WebView adWebView;
               private static final String VERIFIED_DOMAIN = "https://avzapda705-sudo.github.io/";
 
-              // Monetag zones rotation array
-              private final String[] AD_URLS = new String[] {
-                  "https://omg10.com/4/11903025",
-                  "https://nap5k.com/tag.min.js?zone=11904245",
-                  "https://al5sm.com/tag.min.js?zone=11904271",
-                  "https://n6wxm.com/vignette.min.js?zone=11904980",
-                  "https://quge5.com/88/tag.min.js?zone=287797"
+              // Direct link base
+              private static final String DIRECT_LINK_BASE = "https://omg10.com/4/11903025";
+
+              // Different Monetag zone landing templates
+              private final String[] AD_TEMPLATES = new String[] {
+                  // Direct Link with dynamic query
+                  "DIRECT",
+                  // MultiTag 287797 full container
+                  "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='margin:0;background:#050b1e;'><script src='https://quge5.com/88/tag.min.js' data-zone='287797' async data-cfasync='false'></script></body></html>",
+                  // Vignette 11904980 container
+                  "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='margin:0;background:#050b1e;'><script>(function(s){s.dataset.zone='11904980',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script></body></html>",
+                  // Popunder 11904271 container
+                  "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'></head><body style='margin:0;background:#050b1e;'><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script></body></html>"
               };
 
               private final Random random = new Random();
@@ -431,11 +437,15 @@ jobs:
                       }
                   });
 
-                  // Select random Monetag zone URL
-                  int idx = random.nextInt(AD_URLS.length);
-                  String pickedUrl = AD_URLS[idx];
-                  String dynamicAdUrl = pickedUrl + (pickedUrl.contains("?") ? "&" : "?") + "cb=" + System.currentTimeMillis();
-                  adWebView.loadUrl(dynamicAdUrl);
+                  // Pick random ad source: Direct link or one of Monetag live zone containers
+                  int choice = random.nextInt(AD_TEMPLATES.length);
+                  if (choice == 0) {
+                      String dUrl = DIRECT_LINK_BASE + "?cb=" + System.currentTimeMillis() + "&r=" + random.nextInt(99999);
+                      adWebView.loadUrl(dUrl);
+                  } else {
+                      String html = AD_TEMPLATES[choice];
+                      adWebView.loadDataWithBaseURL(VERIFIED_DOMAIN, html, "text/html", "UTF-8", null);
+                  }
 
                   l.addView(adWebView, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
