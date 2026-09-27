@@ -29,10 +29,59 @@ jobs:
         shell: bash
         run: |
           set -e
+
           mkdir -p app/src/main/java/com/watchtoearn/app
           mkdir -p app/src/main/assets
           mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/mipmap-mdpi
+          mkdir -p app/src/main/res/mipmap-hdpi
+          mkdir -p app/src/main/res/mipmap-xhdpi
+          mkdir -p app/src/main/res/mipmap-xxhdpi
+          mkdir -p app/src/main/res/mipmap-xxxhdpi
+          mkdir -p app/src/main/res/mipmap-anydpi-v26
+
           cp index.html app/src/main/assets/index.html
+
+          if [ -f "icon.png" ]; then
+            sudo apt-get update && sudo apt-get install -y imagemagick
+
+            for size in 48:mdpi 72:hdpi 96:xhdpi 144:xxhdpi 192:xxxhdpi; do
+              dim="${size%%:*}"
+              folder="${size##*:}"
+              convert icon.png -resize "${dim}x${dim}^" -gravity center -extent "${dim}x${dim}" PNG32:app/src/main/res/mipmap-${folder}/ic_launcher.png
+              convert icon.png -resize "${dim}x${dim}^" -gravity center -extent "${dim}x${dim}" PNG32:app/src/main/res/mipmap-${folder}/ic_launcher_round.png
+            done
+
+            for size in 108:mdpi 162:hdpi 216:xhdpi 324:xxhdpi 432:xxxhdpi; do
+              canvas="${size%%:*}"
+              folder="${size##*:}"
+              inner=$(( canvas * 88 / 108 ))
+              convert icon.png -resize "${inner}x${inner}" -background none -gravity center -extent "${canvas}x${canvas}" PNG32:app/src/main/res/mipmap-${folder}/ic_launcher_foreground.png
+            done
+
+            cat > app/src/main/res/values/ic_launcher_background.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="ic_launcher_background">#050b1e</color>
+          </resources>
+          EOF
+
+            cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background" />
+              <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+          </adaptive-icon>
+          EOF
+
+            cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background" />
+              <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+          </adaptive-icon>
+          EOF
+          fi
 
           cat > gradle.properties <<'EOF'
           android.useAndroidX=true
@@ -68,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 42
-                  versionName "5.8"
+                  versionCode 43
+                  versionName "5.9"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -96,12 +145,16 @@ jobs:
               <application
                   android:allowBackup="true"
                   android:label="Watch To Earn"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher_round"
                   android:supportsRtl="true"
                   android:usesCleartextTraffic="true"
                   android:theme="@android:style/Theme.NoTitleBar"
                   android:hardwareAccelerated="true">
                   <activity
                       android:name=".MainActivity"
+                      android:icon="@mipmap/ic_launcher"
+                      android:roundIcon="@mipmap/ic_launcher_round"
                       android:exported="true"
                       android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout">
                       <intent-filter>
@@ -285,13 +338,11 @@ jobs:
                   wv.setWebChromeClient(new WebChromeClient());
               }
 
-              // Permanent Fix: Universal URL Scheme & External App Handler
               private class SafeWebClient extends WebViewClient {
                   @Override
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
-                      // 1. If Intent URL (Google Play Store intents, custom app intents)
                       if (url.startsWith("intent://")) {
                           try {
                               Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
@@ -306,10 +357,9 @@ jobs:
                                   }
                               }
                           } catch (Exception ignored) {}
-                          return true; // Stop WebView from loading intent directly
+                          return true;
                       }
 
-                      // 2. If YouTube, Play Store web link, WhatsApp, Telegram, market:// etc.
                       boolean isExternal = !url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("file://");
                       boolean isAppRedirect = url.contains("play.google.com/store") || url.contains("youtube.com") || url.contains("youtu.be");
 
@@ -318,10 +368,9 @@ jobs:
                               Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                               startActivity(intent);
                           } catch (Exception ignored) {}
-                          return true; // Handled outside WebView
+                          return true;
                       }
 
-                      // 3. Normal web URLs (http / https) load inside WebView
                       return false;
                   }
 
@@ -443,4 +492,3 @@ jobs:
           name: WatchToEarn-APK
           path: apk-output/WatchToEarn.apk
           if-no-files-found: error
-          
