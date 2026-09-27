@@ -42,8 +42,8 @@ jobs:
 
           cp index.html app/src/main/assets/index.html
 
-          # Real Monetag Ads Injection (Zone 11904245 & 11904271)
-          MONETAG_TAGS="<script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
+          # Real Monetag Ads Injection (Zone 11904245, 11904271 & 11904980)
+          MONETAG_TAGS="<script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904980',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
           sed -i "s|</body>|${MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
 
           if [ -f "icon.png" ]; then
@@ -121,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 47
-                  versionName "6.3"
+                  versionCode 48
+                  versionName "6.4"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -316,7 +316,7 @@ jobs:
                   @JavascriptInterface
                   public void showRewarded() { runOnUiThread(() -> showAd(true)); }
                   @JavascriptInterface
-                  public void showInterstitial() { runOnUiThread(() -> showAd(true)); }
+                  public void showInterstitial() { runOnUiThread(() -> showAd(false)); }
               }
 
               private void showAd(boolean reward) {
