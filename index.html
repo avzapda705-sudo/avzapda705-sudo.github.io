@@ -17,6 +17,7 @@ padding-bottom:85px
 .hero{
 background:linear-gradient(135deg,#6d2fc2,#b01fc2);
 color:#fff;
+/* Status Bar / Camera Notch માટે ઉપરથી પૂરતી જગ્યા */
 padding: calc(env(safe-area-inset-top, 0px) + 48px) 24px 36px;
 border-radius:0 0 42px 42px
 }
@@ -177,6 +178,7 @@ color:#7a5600
 </div>
 </header>
 
+
 <main class="wrap">
 
 <section id="home" class="page active">
@@ -217,6 +219,7 @@ style="margin-top:18px">
 
 </section>
 
+
 <section id="earn" class="page">
 <div class="card">
 <h2>💎 Coin Rewards</h2>
@@ -235,6 +238,7 @@ Ensure ads are watched completely to receive your coin rewards.
 </div>
 </div>
 </section>
+
 
 <section id="spin" class="page">
 <div class="card">
@@ -276,6 +280,7 @@ Watch a sponsored ad before each spin.
 </div>
 </section>
 
+
 <section id="withdraw" class="page">
 <div class="card">
 <h2>💸 Withdraw</h2>
@@ -314,6 +319,7 @@ REQUEST WITHDRAWAL
 </div>
 </section>
 
+
 <section id="referral" class="page">
 <div class="card">
 <h2>👥 Referral</h2>
@@ -344,6 +350,7 @@ style="margin-top:10px">
 </div>
 </section>
 
+
 <section id="profile" class="page">
 <div class="card">
 <h2>👤 Profile</h2>
@@ -361,6 +368,7 @@ onclick="saveProfile()">
 </section>
 
 </main>
+
 
 <nav class="nav">
 <button onclick="showPage('home')">
@@ -386,344 +394,335 @@ onclick="saveProfile()">
 <div id="toast" class="toast"></div>
 
 <script>
+(function(){
+'use strict';
+
 var FIREBASE_DB_URL = "https://watchtoearn-4862d-default-rtdb.firebaseio.com/withdrawals";
 
 var rewards=[
-  {coins:5,weight:60},
-  {coins:10,weight:25},
-  {coins:20,weight:11},
-  {coins:30,weight:3},
-  {coins:50,weight:1}
+{coins:5,weight:60},
+{coins:10,weight:25},
+{coins:20,weight:11},
+{coins:30,weight:3},
+{coins:50,weight:1}
 ];
 
-var balance = Number(localStorage.getItem('wte_coins')||0);
-var rotation = 0;
-var spinning = false;
-var pendingRewardType = null;
+var balance=Number(localStorage.getItem('wte_coins')||0);
+var rotation=0;
+var spinning=false;
+var pendingRewardType=null;
 
 function $(id){
-  return document.getElementById(id);
+return document.getElementById(id);
 }
 
 function saveBalance(){
-  localStorage.setItem('wte_coins',String(balance));
-  if($('balance'))$('balance').textContent = balance;
-  if($('withdrawBalance'))$('withdrawBalance').textContent = balance;
+localStorage.setItem('wte_coins',String(balance));
+$('balance').textContent=balance;
+if($('withdrawBalance')){$('withdrawBalance').textContent=balance;
+}
 }
 
 function toast(msg){
-  var t = $('toast');
-  if(!t) return;
-  t.textContent = msg;
-  t.style.display = 'block';
-  clearTimeout(window.__toast);
-  window.__toast = setTimeout(function(){
-    t.style.display = 'none';
-  }, 2500);
+var t=$('toast');
+t.textContent=msg;
+t.style.display='block';
+clearTimeout(window.__toast);
+window.__toast=setTimeout(function(){
+t.style.display='none';
+},2500);
 }
 
-window.showPage = function(id){
-  document.querySelectorAll('.page').forEach(function(p){
-    p.classList.remove('active');
-  });
+window.showPage=function(id){
+document.querySelectorAll('.page').forEach(function(p){
+p.classList.remove('active');
+});
 
-  var p = $(id);
-  if(p){
-    p.classList.add('active');
-  }
+var p=$(id);
+if(p){
+p.classList.add('active');
+}
 
-  // પેજ સ્વિચ વખતે એન્ડ્રોઇડ બેકગ્રાઉન્ડ ઇન્ટરસ્ટીશિયલ કાર્ડ એડ ટ્રિગર કરવી
-  if(window.AndroidAd && typeof window.AndroidAd.showInterstitial === 'function'){
-    if(Math.random() < 0.4) { // 40% ચાન્સથી પેજ બદલાય ત્યારે બેકગ્રાઉન્ડ એડ આવે
-      window.AndroidAd.showInterstitial();
-    }
-  }
-
-  if(id === 'withdraw'){
-    syncLiveStatuses();
-    renderHistory();
-    saveBalance();
-  }
+if(id==='withdraw'){
+syncLiveStatuses();
+renderHistory();
+saveBalance();
+}
 };
 
 function day(){
-  var d = new Date();
-  return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+var d=new Date();
+return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
 }
 
 function spinUsed(){
-  if(localStorage.getItem('wte_spin_date') !== day()){
-    localStorage.setItem('wte_spin_date', day());
-    localStorage.setItem('wte_spin_count', '0');
-  }
-  return Number(localStorage.getItem('wte_spin_count')||0);
+if(localStorage.getItem('wte_spin_date')!==day()){
+localStorage.setItem('wte_spin_date',day());
+localStorage.setItem('wte_spin_count','0');
+}
+return Number(localStorage.getItem('wte_spin_count')||0);
 }
 
 function updateSpin(){
-  var left = Math.max(0, 5 - spinUsed());
-  if($('spinLeft'))$('spinLeft').textContent = left;
-  if($('spinBtn')){
-    $('spinBtn').disabled = (left === 0 \vert{}\vert{} spinning);$('spinBtn').textContent = (left === 0) ? 'COME BACK TOMORROW' : '🎡 SPIN NOW';
-  }
+var left=Math.max(0,5-spinUsed());
+$('spinLeft').textContent=left;
+$('spinBtn').disabled=left===0||spinning;
+$('spinBtn').textContent=left===0?'COME BACK TOMORROW':'🎡 SPIN NOW';
 }
 
 function weighted(){
-  var total = rewards.reduce(function(a,b){ return a + b.weight; }, 0);
-  var r = Math.random() * total;
-  for(var i=0; i<rewards.length; i++){
-    r -= rewards[i].weight;
-    if(r < 0){
-      return rewards[i];
-    }
-  }
-  return rewards[0];
+var total=rewards.reduce(function(a,b){return a+b.weight;},0);
+var r=Math.random()*total;
+for(var i=0;i<rewards.length;i++){
+r-=rewards[i].weight;
+if(r<0){
+return rewards[i];
+}
+}
+return rewards[0];
 }
 
 function drawWheel(){
-  var c = $('wheel');
-  if(!c) return;
-  var ctx = c.getContext('2d');
-  var cx = 300;
-  var cy = 300;
-  var r = 285;
-  var colors = ['#ffcf33','#7b39c8','#32a852','#ef4d62','#2d82e8'];
+var c=$('wheel');
+var ctx=c.getContext('2d');
+var cx=300;
+var cy=300;
+var r=285;
+var colors=['#ffcf33','#7b39c8','#32a852','#ef4d62','#2d82e8'];
 
-  ctx.clearRect(0,0,600,600);
+ctx.clearRect(0,0,600,600);
 
-  rewards.forEach(function(x,i){
-    var a = (-90 + i * 72) * Math.PI / 180;
-    var b = (-90 + (i+1) * 72) * Math.PI / 180;
+rewards.forEach(function(x,i){
+var a=(-90+i*72)*Math.PI/180;
+var b=(-90+(i+1)*72)*Math.PI/180;
 
-    ctx.beginPath();
-    ctx.moveTo(cx,cy);
-    ctx.arc(cx,cy,r,a,b);
-    ctx.closePath();
-    ctx.fillStyle = colors[i];
-    ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 7;
-    ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(cx,cy);
+ctx.arc(cx,cy,r,a,b);
+ctx.closePath();
+ctx.fillStyle=colors[i];
+ctx.fill();
+ctx.strokeStyle='#fff';
+ctx.lineWidth=7;
+ctx.stroke();
 
-    ctx.save();
-    ctx.translate(cx,cy);
-    ctx.rotate((a+b)/2);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 42px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(x.coins+'', r * .67, 14);
-    ctx.restore();
-  });
+ctx.save();
+ctx.translate(cx,cy);
+ctx.rotate((a+b)/2);
+ctx.fillStyle='#fff';
+ctx.font='bold 42px Arial';
+ctx.textAlign='center';
+ctx.fillText(x.coins+'',r*.67,14);
+ctx.restore();
+});
 
-  ctx.beginPath();
-  ctx.arc(cx,cy,58,0,Math.PI*2);
-  ctx.fillStyle = '#fff';
-  ctx.fill();
-  ctx.strokeStyle = '#ddd';
-  ctx.lineWidth = 4;
-  ctx.stroke();
+ctx.beginPath();
+ctx.arc(cx,cy,58,0,Math.PI*2);
+ctx.fillStyle='#fff';
+ctx.fill();
+ctx.strokeStyle='#ddd';
+ctx.lineWidth=4;
+ctx.stroke();
 
-  ctx.fillStyle = '#7b39c8';
-  ctx.font = 'bold 23px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('SPIN', cx, cy+8);
+ctx.fillStyle='#7b39c8';
+ctx.font='bold 23px Arial';
+ctx.textAlign='center';
+ctx.fillText('SPIN',cx,cy+8);
 }
 
 /* =====================================
-   ADMOB / START.IO BRIDGE TRIGGERS
+   ADMOB BRIDGE TRIGGERS
    ===================================== */
 
-window.triggerAdMob = function(type){
-  pendingRewardType = type;
+window.triggerAdMob=function(type){
+pendingRewardType=type;
 
-  if(window.AndroidAd && typeof window.AndroidAd.showRewarded === 'function'){
-    window.AndroidAd.showRewarded();
-  } else {
-    toast('Loading preview ad...');
-    setTimeout(function(){
-      window.adMobRewardEarned();
-    }, 1500);
-  }
+if(window.AndroidAd && typeof window.AndroidAd.showRewarded==='function'){
+window.AndroidAd.showRewarded();
+}else{
+toast('Ad loaded in demo mode');
+setTimeout(function(){
+window.adMobRewardEarned();
+},1200);
+}
 };
 
-// Android Native Java કોલ માટે સંપૂર્ણ ગ્લોબલ ફંક્શન
-window.adMobRewardEarned = function(){
-  if(!pendingRewardType) return;
+window.adMobRewardEarned=function(){
+if(!pendingRewardType) return;
 
-  if(pendingRewardType === 'watch'){
-    balance += 10;
-    saveBalance();
-    if($('videoText'))$('videoText').textContent = '✅ Completed +10 coins';
-    toast('🎉 +10 Coins Added!');
-  }
-  else if(pendingRewardType === 'bonus'){
-    var n = 20 + Math.floor(Math.random() * 11);
-    balance += n;
-    saveBalance();
-    localStorage.setItem('wte_bonus_date', day());
-    if($('bonusBtn')){$('bonusBtn').disabled = true;
-      $('bonusBtn').textContent = '✓ BONUS CLAIMED';
-    }
-    toast('🎁 Daily Bonus +' + n + ' Coins!');
-  }
-  else if(pendingRewardType === 'spin'){
-    doSpin();
-  }
+if(pendingRewardType==='watch'){
+balance+=10;
+saveBalance();
+$('videoText').textContent='✅ Completed +10 coins';
+toast('🎉 +10 Coins Added!');
+}
+else if(pendingRewardType==='bonus'){
+var n=20+Math.floor(Math.random()*11);
+balance+=n;
+saveBalance();
+localStorage.setItem('wte_bonus_date',day());
+$('bonusBtn').disabled=true;
+$('bonusBtn').textContent='✓ BONUS CLAIMED';
+toast('🎁 Daily Bonus +'+n+' Coins!');
+}
+else if(pendingRewardType==='spin'){
+doSpin();
+}
 
-  pendingRewardType = null;
+pendingRewardType=null;
 };
 
 /* =========================
    SPIN ACTIONS
    ========================= */
 
-window.startSpin = function(){
-  if(spinning) return;
+window.startSpin=function(){
+if(spinning)return;
 
-  if(spinUsed() >= 5){
-    toast('Today’s 5 spins limit reached');
-    return;
-  }
+if(spinUsed()>=5){
+toast('Today’s 5 spins limit reached');
+return;
+}
 
-  triggerAdMob('spin');
+triggerAdMob('spin');
 };
 
 function doSpin(){
-  spinning = true;
-  localStorage.setItem('wte_spin_count', String(spinUsed() + 1));
-  updateSpin();
+spinning=true;
+localStorage.setItem('wte_spin_count',String(spinUsed()+1));
+updateSpin();
 
-  var reward = weighted();
-  var index = rewards.findIndex(function(x){ return x.coins === reward.coins; });
-  var target = 360 * 6 - 36 - index * 72;
+var reward=weighted();
+var index=rewards.findIndex(function(x){return x.coins===reward.coins;});
+var target=360*6-36-index*72;
 
-  rotation += target - (rotation % 360);
-  if($('wheel'))$('wheel').style.transform = 'rotate(' + rotation + 'deg)';
+rotation+=target-(rotation%360);
+$('wheel').style.transform='rotate('+rotation+'deg)';
 
-  setTimeout(function(){
-    balance += reward.coins;
-    saveBalance();
-    toast('🎉 You won ' + reward.coins + ' coins!');
-    spinning = false;
-    updateSpin();
-  }, 4300);
+setTimeout(function(){
+balance+=reward.coins;
+saveBalance();
+toast('🎉 You won '+reward.coins+' coins!');
+spinning=false;
+updateSpin();
+},4300);
 }
 
 /* ==============================================
    WITHDRAW (TELEGRAM ALERT + FIREBASE REALTIME)
    ============================================== */
 
-window.withdrawCoins = function(){
-  var upi = $('upi').value.trim();
-  var amount = Number($('amount').value);
+window.withdrawCoins=function(){
+var upi=$('upi').value.trim();
+var amount=Number($('amount').value);
 
-  if(!upi || upi.indexOf('@') < 1){
-    toast('Enter a valid UPI ID');
-    return;
-  }
+if(!upi||upi.indexOf('@')<1){
+toast('Enter a valid UPI ID');
+return;
+}
 
-  if(amount < 200){
-    toast('Minimum withdrawal is 200 coins');
-    return;
-  }
+if(amount<200){
+toast('Minimum withdrawal is 200 coins');
+return;
+}
 
-  if(amount > balance){
-    toast('Insufficient balance');
-    return;
-  }
+if(amount>balance){
+toast('Insufficient balance');
+return;
+}
 
-  balance -= amount;
-  saveBalance();
+balance-=amount;
+saveBalance();
 
-  var reqId = "REQ_" + Date.now();
-  var reqDate = new Date().toLocaleString();
-  var userName = localStorage.getItem('wte_name') || 'Guest User';
+var reqId = "REQ_" + Date.now();
+var reqDate = new Date().toLocaleString();
+var userName = localStorage.getItem('wte_name')||'Guest User';
 
-  var newReq = {
-    id: reqId,
-    amount: amount,
-    upi: upi,
-    date: reqDate,
-    status: 'Pending'
-  };
+var newReq = {
+id: reqId,
+amount: amount,
+upi: upi,
+date: reqDate,
+status: 'Pending'
+};
 
-  var h = JSON.parse(localStorage.getItem('wte_history') || '[]');
-  h.unshift(newReq);
-  localStorage.setItem('wte_history', JSON.stringify(h));
+var h=JSON.parse(localStorage.getItem('wte_history')||'[]');
+h.unshift(newReq);
+localStorage.setItem('wte_history',JSON.stringify(h));
 
-  $('amount').value = '';
-  renderHistory();
-  toast('Withdrawal request submitted');
+$('amount').value='';
+renderHistory();
+toast('Withdrawal request submitted');
 
-  fetch(FIREBASE_DB_URL + "/" + reqId + ".json", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(newReq)
-  }).catch(function(e){ console.error(e); });
+fetch(FIREBASE_DB_URL + "/" + reqId + ".json", {
+  method: "PUT",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(newReq)
+}).catch(function(e){ console.error(e); });
 
-  var botToken = "8932759393:AAEBYxPRAHPHWrQeyCePu26ZDEQpOgLLKnU";
-  var chatId = "6748953573";
+var botToken = "8932759393:AAEBYxPRAHPHWrQeyCePu26ZDEQpOgLLKnU";
+var chatId = "6748953573";
 
-  var textMsg = "💸 *New Withdrawal Request!*\n\n"
-              + "🆔 *ID:* `" + reqId + "`\n"
-              + "👤 *User:* " + userName + "\n"
-              + "🪙 *Coins:* " + amount + "\n"
-              + "💳 *UPI ID:* `" + upi + "`\n"
-              + "📅 *Date:* " + reqDate;
+var textMsg = "💸 *New Withdrawal Request!*\n\n"
+            + "🆔 *ID:* `" + reqId + "`\n"
+            + "👤 *User:* " + userName + "\n"
+            + "🪙 *Coins:* " + amount + "\n"
+            + "💳 *UPI ID:* `" + upi + "`\n"
+            + "📅 *Date:* " + reqDate;
 
-  fetch("https://api.telegram.org/bot" + botToken + "/sendMessage", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: textMsg,
-      parse_mode: "Markdown"
-    })
-  }).catch(function(err){});
+fetch("https://api.telegram.org/bot" + botToken + "/sendMessage", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    chat_id: chatId,
+    text: textMsg,
+    parse_mode: "Markdown"
+  })
+}).catch(function(err){});
 };
 
 function syncLiveStatuses(){
-  var h = JSON.parse(localStorage.getItem('wte_history') || '[]');
-  if(!h.length) return;
+var h=JSON.parse(localStorage.getItem('wte_history')||'[]');
+if(!h.length) return;
 
-  fetch(FIREBASE_DB_URL + ".json")
-    .then(function(res){ return res.json(); })
-    .then(function(data){
-      if(!data) return;
-      var changed = false;
-      h.forEach(function(item){
-        if(data[item.id] && data[item.id].status && data[item.id].status !== item.status){
-          item.status = data[item.id].status;
-          changed = true;
-        }
-      });
-      if(changed){
-        localStorage.setItem('wte_history', JSON.stringify(h));
-        renderHistory();
+fetch(FIREBASE_DB_URL + ".json")
+  .then(function(res){ return res.json(); })
+  .then(function(data){
+    if(!data) return;
+    var changed = false;
+    h.forEach(function(item){
+      if(data[item.id] && data[item.id].status && data[item.id].status !== item.status){
+        item.status = data[item.id].status;
+        changed = true;
       }
-    })
-    .catch(function(err){ console.error(err); });
+    });
+    if(changed){
+      localStorage.setItem('wte_history', JSON.stringify(h));
+      renderHistory();
+    }
+  })
+  .catch(function(err){ console.error(err); });
 }
 
 function renderHistory(){
-  var h = JSON.parse(localStorage.getItem('wte_history') || '[]');
-  var el = $('history');
-  if(!el) return;
+var h=JSON.parse(localStorage.getItem('wte_history')||'[]');
+var el=$('history');
 
-  if(!h.length){
-    el.innerHTML = '<div class="muted">No withdrawal history available.</div>';
-    return;
-  }
+if(!h.length){
+el.innerHTML='<div class="muted">No withdrawal history available.</div>';
+return;
+}
 
-  el.innerHTML = '<h3>Withdrawal History</h3>' + h.map(function(x){
-    var statusColor = (x.status === 'Success' || x.status === 'Completed') ? '#16a34a' : (x.status === 'Rejected' ? '#dc2626' : '#d97706');
-    var statusIcon = (x.status === 'Success' || x.status === 'Completed') ? '✅ ' : '';
-    return '<div class="history">'
-      + '<b>' + x.amount + ' coins</b><br>'
-      + 'UPI: ' + x.upi + '<br>'
-      + x.date + '<br>'
-      + 'Status: <b style="color:' + statusColor + '">' + statusIcon + x.status + '</b>'
-      + '</div>';
-  }).join('');
+el.innerHTML='<h3>Withdrawal History</h3>'+h.map(function(x){
+var statusColor = (x.status === 'Success' || x.status === 'Completed') ? '#16a34a' : (x.status === 'Rejected' ? '#dc2626' : '#d97706');
+var statusIcon = (x.status === 'Success' || x.status === 'Completed') ? '✅ ' : '';
+return '<div class="history">'
++'<b>'+x.amount+' coins</b><br>'
++'UPI: '+x.upi+'<br>'
++x.date+'<br>'
++'Status: <b style="color:'+statusColor+'">'+statusIcon+x.status+'</b>'
++'</div>';
+}).join('');
 }
 
 /* =========================
@@ -731,71 +730,70 @@ function renderHistory(){
    ========================= */
 
 function referralCode(){
-  var c = localStorage.getItem('wte_ref');
-  if(!c){
-    c = 'WT' + Math.floor(100000 + Math.random() * 900000);
-    localStorage.setItem('wte_ref', c);
-  }
-  return c;
+var c=localStorage.getItem('wte_ref');
+if(!c){
+c='WT'+Math.floor(100000+Math.random()*900000);
+localStorage.setItem('wte_ref',c);
+}
+return c;
 }
 
 function referralUrl(){
-  return location.href.split('?')[0] + '?ref=' + encodeURIComponent(referralCode());
+return location.href.split('?')[0]+'?ref='+encodeURIComponent(referralCode());
 }
 
 function updateRef(){
-  if($('refCode'))$('refCode').textContent = referralCode();
-  if($('refLink'))$('refLink').textContent = referralUrl();
+$('refCode').textContent=referralCode();$('refLink').textContent=referralUrl();
 }
 
-window.copyReferral = function(){
-  var text = referralUrl();
-  if(navigator.clipboard && window.isSecureContext){
-    navigator.clipboard.writeText(text).then(function(){
-      toast('✅ Referral link copied');
-    }).catch(function(){
-      fallbackCopy(text);
-    });
-  } else {
-    fallbackCopy(text);
-  }
+window.copyReferral=function(){
+var text=referralUrl();
+if(navigator.clipboard&&window.isSecureContext){
+navigator.clipboard.writeText(text).then(function(){
+toast('✅ Referral link copied');
+}).catch(function(){
+fallbackCopy(text);
+});
+}else{
+fallbackCopy(text);
+}
 };
 
 function fallbackCopy(text){
-  var ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.left = '-9999px';
-  document.body.appendChild(ta);
-  ta.focus();
-  ta.select();
-  try{
-    document.execCommand('copy');
-    toast('✅ Referral link copied');
-  }catch(e){
-    toast('Copy failed — please select link manually');
-  }
-  document.body.removeChild(ta);
+var ta=document.createElement('textarea');
+ta.value=text;
+ta.style.position='fixed';
+ta.style.left='-9999px';
+document.body.appendChild(ta);
+ta.focus();
+ta.select();
+try{
+document.execCommand('copy');
+toast('✅ Referral link copied');
+}catch(e){
+toast('Copy failed — please select link manually');
+}
+document.body.removeChild(ta);
 }
 
-window.shareReferral = function(){
-  var text = '🎬 Watch to Earn App\nJoin using my referral link:\n' + referralUrl();
-  var url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(text);
-  window.location.href = url;
+window.shareReferral=function(){
+var text='🎬 Watch to Earn App\nJoin using my referral link:\n'+referralUrl();
+var url='https://api.whatsapp.com/send?text='+encodeURIComponent(text);
+window.location.href=url;
 };
 
 /* =========================
    PROFILE
    ========================= */
 
-window.saveProfile = function(){
-  var name = $('profileName').value.trim();
-  if(!name){
-    toast('Please enter your name');
-    return;
-  }
-  localStorage.setItem('wte_name', name);
-  toast('✅ Profile saved successfully');
+window.saveProfile=function(){
+var name=$('profileName').value.trim();
+if(!name){
+toast('Please enter your name');
+return;
+}
+localStorage.setItem('wte_name',name);
+toast('✅ Profile saved successfully');
 };
 
 /* =========================
@@ -803,26 +801,25 @@ window.saveProfile = function(){
    ========================= */
 
 function init(){
-  saveBalance();
-  drawWheel();
-  updateSpin();
-  updateRef();
-  syncLiveStatuses();
-  renderHistory();
+saveBalance();
+drawWheel();
+updateSpin();
+updateRef();
+syncLiveStatuses();
+renderHistory();
 
-  if($('profileName'))$('profileName').value = localStorage.getItem('wte_name') || '';
+$('profileName').value=localStorage.getItem('wte_name')||'';
 
-  if(localStorage.getItem('wte_bonus_date') === day()){
-    if($('bonusBtn')){$('bonusBtn').disabled = true;
-      $('bonusBtn').textContent = '✓ BONUS CLAIMED';
-    }
-  }
+if(localStorage.getItem('wte_bonus_date')===day()){
+$('bonusBtn').disabled=true;
+$('bonusBtn').textContent='✓ BONUS CLAIMED';
+}
 }
 
-document.addEventListener('DOMContentLoaded', init);
-window.onload = init;
+init();
+
+})();
 </script>
 
 </body>
-   </html>
-   
+</html>
