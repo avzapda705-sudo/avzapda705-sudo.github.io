@@ -130,8 +130,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 22
-                  versionName "3.4"
+                  versionCode 23
+                  versionName "3.5"
               }
 
               compileOptions {
@@ -207,6 +207,7 @@ jobs:
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
           import android.widget.FrameLayout;
+          import android.widget.Toast;
 
           import com.startapp.sdk.adsbase.Ad;
           import com.startapp.sdk.adsbase.StartAppAd;
@@ -224,8 +225,6 @@ jobs:
               private StartAppAd rewardedAd;
               private ProgressDialog progressDialog;
               private Handler handler = new Handler(Looper.getMainLooper());
-              private Runnable bgAdRunnable;
-              private boolean isAdDisplaying = false;
 
               private static final String STARTAPP_APP_ID = "208761301";
 
@@ -233,7 +232,9 @@ jobs:
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
+                  // Test mode enabled for sample video ads
                   StartAppSDK.init(this, STARTAPP_APP_ID, false);
+                  StartAppSDK.setTestAdsEnabled(true);
                   StartAppSDK.enableReturnAds(false);
                   StartAppSDK.setUserConsent(this, "pas", System.currentTimeMillis(), true);
 
@@ -294,21 +295,6 @@ jobs:
                   root.addView(bottomBanner, bannerParams);
 
                   setContentView(root);
-
-                  setupBackgroundAds();
-              }
-
-              private void setupBackgroundAds() {
-                  bgAdRunnable = new Runnable() {
-                      @Override
-                      public void run() {
-                          if (!isAdDisplaying && !isFinishing()) {
-                              StartAppAd.showAd(MainActivity.this);
-                          }
-                          handler.postDelayed(this, 30000); // Dar 30 seconde background ad check karse
-                      }
-                  };
-                  handler.postDelayed(bgAdRunnable, 15000); // Paheli ad 15 second pachhi aavse
               }
 
               private void preloadRewardedAd() {
@@ -337,19 +323,16 @@ jobs:
                       runOnUiThread(() -> {
                           if (isFinishing()) return;
 
-                          // Pehla check kare ke video loaded chhe ke nahi
                           if (rewardedAd != null && rewardedAd.isReady()) {
                               playVideoAd();
                               return;
                           }
 
-                          // Loading dialogue show karvo
                           progressDialog = new ProgressDialog(MainActivity.this);
-                          progressDialog.setMessage("Ad loading... please wait");
+                          progressDialog.setMessage("Loading Test Video Ad...");
                           progressDialog.setCancelable(false);
                           progressDialog.show();
 
-                          // Video load karvano try
                           rewardedAd.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, new AdEventListener() {
                               @Override
                               public void onReceiveAd(Ad ad) {
@@ -359,17 +342,17 @@ jobs:
 
                               @Override
                               public void onFailedToReceiveAd(Ad ad) {
-                                  // Video na male to instant full-screen ad show karvi
-                                  loadAndShowFallbackAd();
+                                  dismissLoading();
+                                  Toast.makeText(MainActivity.this, "Test video load failed", Toast.LENGTH_SHORT).show();
                               }
                           });
 
-                          // Max 4 second wait, pachi direct fallback
                           handler.postDelayed(() -> {
                               if (progressDialog != null && progressDialog.isShowing()) {
-                                  loadAndShowFallbackAd();
+                                  dismissLoading();
+                                  Toast.makeText(MainActivity.this, "Timeout loading video", Toast.LENGTH_SHORT).show();
                               }
-                          }, 4000);
+                          }, 8000);
                       });
                   }
 
@@ -384,7 +367,6 @@ jobs:
               }
 
               private void playVideoAd() {
-                  isAdDisplaying = true;
                   rewardedAd.setVideoListener(new VideoListener() {
                       @Override
                       public void onVideoCompleted() {
@@ -395,7 +377,6 @@ jobs:
                   rewardedAd.showAd(new AdDisplayListener() {
                       @Override
                       public void adHidden(Ad ad) {
-                          isAdDisplaying = false;
                           preloadRewardedAd();
                       }
 
@@ -407,46 +388,6 @@ jobs:
 
                       @Override
                       public void adNotDisplayed(Ad ad) {
-                          isAdDisplaying = false;
-                          loadAndShowFallbackAd();
-                      }
-                  });
-              }
-
-              private void loadAndShowFallbackAd() {
-                  dismissLoading();
-                  StartAppAd interstitialAd = new StartAppAd(MainActivity.this);
-                  interstitialAd.loadAd(StartAppAd.AdMode.AUTOMATIC, new AdEventListener() {
-                      @Override
-                      public void onReceiveAd(Ad ad) {
-                          isAdDisplaying = true;
-                          interstitialAd.showAd(new AdDisplayListener() {
-                              @Override
-                              public void adHidden(Ad ad) {
-                                  isAdDisplaying = false;
-                                  triggerRewardInWeb();
-                                  preloadRewardedAd();
-                              }
-
-                              @Override
-                              public void adDisplayed(Ad ad) {}
-
-                              @Override
-                              public void adClicked(Ad ad) {}
-
-                              @Override
-                              public void adNotDisplayed(Ad ad) {
-                                  isAdDisplaying = false;
-                                  triggerRewardInWeb();
-                                  preloadRewardedAd();
-                              }
-                          });
-                      }
-
-                      @Override
-                      public void onFailedToReceiveAd(Ad ad) {
-                          isAdDisplaying = false;
-                          triggerRewardInWeb();
                           preloadRewardedAd();
                       }
                   });
@@ -466,9 +407,6 @@ jobs:
               @Override
               protected void onDestroy() {
                   dismissLoading();
-                  if (handler != null && bgAdRunnable != null) {
-                      handler.removeCallbacks(bgAdRunnable);
-                  }
                   super.onDestroy();
               }
 
