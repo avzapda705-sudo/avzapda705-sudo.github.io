@@ -42,7 +42,7 @@ jobs:
 
           cp index.html app/src/main/assets/index.html
 
-          # Monetag Banner and Onclick Tag injection directly with https: protocol to prevent file:// protocol error
+          # Real Monetag Ads Injection (Zone 11904245 and 11904271)
           MONETAG_TAGS="<script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
           sed -i "s|</body>|${MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
 
@@ -121,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 45
-                  versionName "6.1"
+                  versionCode 46
+                  versionName "6.2"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -137,7 +137,6 @@ jobs:
           }
           dependencies {
               implementation "androidx.annotation:annotation:1.9.1"
-              implementation "androidx.cardview:cardview:1.0.0"
           }
           EOF
 
@@ -182,10 +181,6 @@ jobs:
           import android.net.http.SslError;
           import android.os.Bundle;
           import android.os.CountDownTimer;
-          import android.os.Handler;
-          import android.os.Looper;
-          import android.os.Message;
-          import android.util.TypedValue;
           import android.view.Gravity;
           import android.view.View;
           import android.view.Window;
@@ -199,15 +194,12 @@ jobs:
           import android.widget.FrameLayout;
           import android.widget.LinearLayout;
           import android.widget.TextView;
-          import androidx.cardview.widget.CardView;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
               private Dialog adDialog;
               private WebView adWebView;
-              private CardView floatingCardAd;
               private static final String AD_URL = "https://omg10.com/4/11903025";
-              private final Handler handler = new Handler(Looper.getMainLooper());
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
@@ -215,168 +207,41 @@ jobs:
                   FrameLayout root = new FrameLayout(this);
 
                   mainWebView = new WebView(this);
-                  setupWeb(mainWebView, false);
-                  mainWebView.setWebViewClient(new InAppWebClient(mainWebView));
+                  setupWeb(mainWebView);
+                  mainWebView.setWebViewClient(new InAppWebClient());
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
-                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 54, getResources().getDisplayMetrics());
+                  // Full screen view (removed dummy bottom banner)
                   FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
-                  wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
 
-                  LinearLayout banner = new LinearLayout(this);
-                  banner.setBackgroundColor(Color.parseColor("#111827"));
-                  banner.setGravity(Gravity.CENTER_VERTICAL);
-                  banner.setPadding(24, 0, 24, 0);
-
-                  TextView badge = new TextView(this);
-                  badge.setText("AD");
-                  badge.setTextColor(Color.BLACK);
-                  badge.setBackgroundColor(Color.parseColor("#F59E0B"));
-                  badge.setPadding(10, 4, 10, 4);
-                  badge.setTextSize(11);
-                  banner.addView(badge);
-
-                  TextView bTxt = new TextView(this);
-                  bTxt.setText("Special Sponsored Reward Offers");
-                  bTxt.setTextColor(Color.WHITE);
-                  bTxt.setTextSize(13);
-                  bTxt.setPadding(16, 0, 0, 0);
-                  banner.addView(bTxt, new LinearLayout.LayoutParams(0, -2, 1.0f));
-
-                  Button bBtn = new Button(this);
-                  bBtn.setText("OPEN");
-                  bBtn.setTextSize(11);
-                  bBtn.setTextColor(Color.WHITE);
-                  bBtn.setBackgroundColor(Color.parseColor("#7C3AED"));
-                  banner.addView(bBtn);
-
-                  View.OnClickListener bClick = v -> showAd(false);
-                  banner.setOnClickListener(bClick);
-                  bBtn.setOnClickListener(bClick);
-
-                  FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
-                  bp.gravity = Gravity.BOTTOM;
-                  root.addView(banner, bp);
-
-                  buildCard(root);
                   setContentView(root);
-
-                  handler.postDelayed(new Runnable() {
-                      @Override
-                      public void run() {
-                          if (!isFinishing() && floatingCardAd != null) {
-                              floatingCardAd.setVisibility(View.VISIBLE);
-                              floatingCardAd.bringToFront();
-                              handler.postDelayed(() -> {
-                                  if (floatingCardAd != null) floatingCardAd.setVisibility(View.GONE);
-                              }, 8000);
-                          }
-                          handler.postDelayed(this, 30000);
-                      }
-                  }, 5000);
-              }
-
-              private void buildCard(FrameLayout root) {
-                  floatingCardAd = new CardView(this);
-                  floatingCardAd.setRadius(24);
-                  floatingCardAd.setCardElevation(24);
-                  floatingCardAd.setCardBackgroundColor(Color.WHITE);
-                  floatingCardAd.setVisibility(View.GONE);
-
-                  LinearLayout cl = new LinearLayout(this);
-                  cl.setGravity(Gravity.CENTER_VERTICAL);
-                  cl.setPadding(20, 16, 20, 16);
-
-                  TextView ic = new TextView(this);
-                  ic.setText("🎁");
-                  ic.setTextSize(22);
-                  cl.addView(ic);
-
-                  LinearLayout tl = new LinearLayout(this);
-                  tl.setOrientation(LinearLayout.VERTICAL);
-                  tl.setPadding(16, 0, 8, 0);
-
-                  TextView h = new TextView(this);
-                  h.setText("Special Bonus Available!");
-                  h.setTextColor(Color.BLACK);
-                  h.setTextSize(14);
-
-                  TextView s = new TextView(this);
-                  s.setText("Tap to view offer & earn coins");
-                  s.setTextColor(Color.GRAY);
-                  s.setTextSize(11);
-
-                  tl.addView(h);
-                  tl.addView(s);
-                  cl.addView(tl, new LinearLayout.LayoutParams(0, -2, 1.0f));
-
-                  TextView close = new TextView(this);
-                  close.setText("✖");
-                  close.setTextSize(18);
-                  close.setTextColor(Color.GRAY);
-                  close.setPadding(12, 12, 12, 12);
-                  close.setOnClickListener(v -> floatingCardAd.setVisibility(View.GONE));
-                  cl.addView(close);
-
-                  cl.setOnClickListener(v -> {
-                      floatingCardAd.setVisibility(View.GONE);
-                      showAd(false);
-                  });
-
-                  floatingCardAd.addView(cl);
-                  FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(-1, -2);
-                  cp.gravity = Gravity.TOP;
-                  int topMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 110, getResources().getDisplayMetrics());
-                  cp.setMargins(24, topMargin, 24, 0);
-                  root.addView(floatingCardAd, cp);
               }
 
               @SuppressLint("SetJavaScriptEnabled")
-              private void setupWeb(WebView wv, boolean isAdView) {
+              private void setupWeb(WebView wv) {
                   WebSettings s = wv.getSettings();
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
                   s.setDatabaseEnabled(true);
                   s.setAllowFileAccess(true);
                   s.setAllowContentAccess(true);
-                  s.setSupportMultipleWindows(true);
+                  s.setSupportMultipleWindows(false);
                   s.setJavaScriptCanOpenWindowsAutomatically(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                   s.setUserAgentString("Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
-
-                  wv.setWebChromeClient(new WebChromeClient() {
-                      @Override
-                      public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                          // Force popup windows or click ads to open inside our ad container instead of browser
-                          showAd(false);
-                          if (adWebView != null) {
-                              WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                              transport.setWebView(adWebView);
-                              resultMsg.sendToTarget();
-                              return true;
-                          }
-                          return false;
-                      }
-                  });
+                  wv.setWebChromeClient(new WebChromeClient());
               }
 
               private class InAppWebClient extends WebViewClient {
-                  private final WebView targetView;
-
-                  public InAppWebClient(WebView targetView) {
-                      this.targetView = targetView;
-                  }
-
                   @Override
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
-                      // Fix file:// relative url bug triggered by Monetag
+                      // Fix relative URL file:// protocol error from Monetag
                       if (url.startsWith("file://") && !url.contains("android_asset")) {
-                          String fixed = url.replace("file://", "https://");
-                          view.loadUrl(fixed);
+                          view.loadUrl(url.replace("file://", "https://"));
                           return true;
                       }
 
@@ -395,7 +260,6 @@ jobs:
                       }
 
                       if (url.startsWith("http://") || url.startsWith("https://")) {
-                          // Keep ad inside app
                           view.loadUrl(url);
                           return true;
                       }
@@ -447,8 +311,8 @@ jobs:
                   l.addView(tb);
 
                   adWebView = new WebView(this);
-                  setupWeb(adWebView, true);
-                  adWebView.setWebViewClient(new InAppWebClient(adWebView));
+                  setupWeb(adWebView);
+                  adWebView.setWebViewClient(new InAppWebClient());
                   adWebView.loadUrl(AD_URL);
                   l.addView(adWebView, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
@@ -484,7 +348,6 @@ jobs:
 
               @Override
               protected void onDestroy() {
-                  handler.removeCallbacksAndMessages(null);
                   if (adDialog != null && adDialog.isShowing()) adDialog.dismiss();
                   if (adWebView != null) adWebView.destroy();
                   if (mainWebView != null) mainWebView.destroy();
