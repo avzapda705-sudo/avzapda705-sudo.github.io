@@ -29,44 +29,116 @@ jobs:
         shell: bash
         run: |
           set -e
+
           mkdir -p app/src/main/java/com/watchtoearn/app
           mkdir -p app/src/main/assets
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/mipmap-mdpi
+          mkdir -p app/src/main/res/mipmap-hdpi
+          mkdir -p app/src/main/res/mipmap-xhdpi
+          mkdir -p app/src/main/res/mipmap-xxhdpi
+          mkdir -p app/src/main/res/mipmap-xxxhdpi
+          mkdir -p app/src/main/res/mipmap-anydpi-v26
+
           cp index.html app/src/main/assets/index.html
 
-          cat > gradle.properties << 'EOF'
-          android.useAndroidX=true
-          android.enableJetifier=true
-          org.gradle.jvmargs=-Xmx2048m
+          if [ -f "icon.png" ]; then
+            sudo apt-get update && sudo apt-get install -y imagemagick
+
+            for size in 48:mdpi 72:hdpi 96:xhdpi 144:xxhdpi 192:xxxhdpi; do
+              dim="${size%%:*}"
+              folder="${size##*:}"
+              convert icon.png -resize "${dim}x${dim}^" -gravity center -extent "${dim}x${dim}" PNG32:app/src/main/res/mipmap-${folder}/ic_launcher.png
+              convert icon.png -resize "${dim}x${dim}^" -gravity center -extent "${dim}x${dim}" PNG32:app/src/main/res/mipmap-${folder}/ic_launcher_round.png
+            done
+
+            for size in 108:mdpi 162:hdpi 216:xhdpi 324:xxhdpi 432:xxxhdpi; do
+              canvas="${size%%:*}"
+              folder="${size##*:}"
+              inner=$(( canvas * 88 / 108 ))
+              convert icon.png -resize "${inner}x${inner}" -background none -gravity center -extent "${canvas}x${canvas}" PNG32:app/src/main/res/mipmap-${folder}/ic_launcher_foreground.png
+            done
+
+            cat > app/src/main/res/values/ic_launcher_background.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="ic_launcher_background">#050b1e</color>
+          </resources>
           EOF
 
-          cat > settings.gradle << 'EOF'
-          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+            cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background" />
+              <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+          </adaptive-icon>
+          EOF
+
+            cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background" />
+              <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+          </adaptive-icon>
+          EOF
+          fi
+
+          cat > gradle.properties <<'EOF'
+          android.useAndroidX=true
+          android.enableJetifier=true
+          android.suppressUnsupportedCompileSdk=35
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          EOF
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories { google(); mavenCentral() }
+              repositories {
+                  google()
+                  mavenCentral()
+              }
           }
+
           rootProject.name = "WatchToEarn"
           include(":app")
           EOF
 
-          cat > build.gradle << 'EOF'
-          plugins { id 'com.android.application' version '8.2.2' apply false }
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.2.2' apply false
+          }
           EOF
 
-          cat > app/build.gradle << 'EOF'
-          plugins { id 'com.android.application' }
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+
           android {
               namespace "com.watchtoearn.app"
               compileSdk 35
+
               defaultConfig {
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 26
-                  versionName "4.2"
+                  versionCode 27
+                  versionName "4.3"
               }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
               buildTypes {
                   release {
                       minifyEnabled false
@@ -74,152 +146,311 @@ jobs:
                   }
               }
           }
+
           dependencies {
-              implementation "com.startapp:inapp-sdk:5.1.0"
+              implementation "com.unity3d.ads:unity-ads:4.12.5"
               implementation "androidx.annotation:annotation:1.9.1"
           }
           EOF
 
-          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
               <application
+                  android:allowBackup="true"
                   android:label="Watch To Earn"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:supportsRtl="true"
                   android:theme="@android:style/Theme.NoTitleBar"
                   android:hardwareAccelerated="true">
+
                   <activity
                       android:name=".MainActivity"
+                      android:icon="@mipmap/ic_launcher"
+                      android:roundIcon="@mipmap/ic_launcher_round"
                       android:exported="true"
-                      android:configChanges="orientation|screenSize|keyboardHidden">
+                      android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout">
+
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
+
                   </activity>
+
               </application>
+
           </manifest>
           EOF
 
-          curl -sL https://pastebin.com/raw/u9m3hL3b -o app/src/main/java/com/watchtoearn/app/MainActivity.java || cat > app/src/main/java/com/watchtoearn/app/MainActivity.java << 'EOF'
+          cat > app/src/main/java/com/watchtoearn/app/MainActivity.java <<'EOF'
           package com.watchtoearn.app;
+
           import android.app.Activity;
-          import android.app.ProgressDialog;
+          import android.content.Intent;
+          import android.net.Uri;
           import android.os.Bundle;
-          import android.os.Handler;
-          import android.os.Looper;
+          import android.util.TypedValue;
           import android.view.Gravity;
-          import android.webkit.*;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
           import android.widget.FrameLayout;
-          import com.startapp.sdk.adsbase.*;
-          import com.startapp.sdk.adsbase.adlisteners.*;
-          import com.startapp.sdk.ads.banner.Banner;
+          import android.widget.Toast;
+
+          import com.unity3d.ads.IUnityAdsInitializationListener;
+          import com.unity3d.ads.IUnityAdsLoadListener;
+          import com.unity3d.ads.IUnityAdsShowListener;
+          import com.unity3d.ads.UnityAds;
+          import com.unity3d.ads.UnityAdsShowOptions;
+          import com.unity3d.services.banners.BannerErrorInfo;
+          import com.unity3d.services.banners.BannerView;
+          import com.unity3d.services.banners.UnityBannerSize;
 
           public class MainActivity extends Activity {
+
               private WebView webView;
-              private StartAppAd rewardedAd, videoFallbackAd;
-              private ProgressDialog progressDialog;
-              private Handler handler = new Handler(Looper.getMainLooper());
-              private boolean isShowing = false;
+              private BannerView bottomBanner;
+              private FrameLayout root;
+
+              private static final String UNITY_GAME_ID = "800377040";
+              private static final boolean TEST_MODE = false;
+
+              private static final String BANNER_PLACEMENT = "BP_Banner_Android";
+              private static final String REWARDED_PLACEMENT = "BP_Rewarded_Android";
+              private static final String INTERSTITIAL_PLACEMENT = "BP_Interstitial_Android";
+
+              private boolean isRewardedLoaded = false;
+              private boolean isInterstitialLoaded = false;
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-                  StartAppSDK.init(this, "208761301", false);
-                  StartAppSDK.enableReturnAds(false);
-                  rewardedAd = new StartAppAd(this);
-                  videoFallbackAd = new StartAppAd(this);
-                  loadAds();
 
-                  FrameLayout root = new FrameLayout(this);
+                  root = new FrameLayout(this);
+
                   webView = new WebView(this);
-                  webView.getSettings().setJavaScriptEnabled(true);
-                  webView.getSettings().setDomStorageEnabled(true);
-                  webView.addJavascriptInterface(new Object() {
-                      @JavascriptInterface
-                      public void showRewarded() {
-                          runOnUiThread(() -> {
-                              if (rewardedAd.isReady()) { play(rewardedAd); return; }
-                              if (videoFallbackAd.isReady()) { play(videoFallbackAd); return; }
-                              progressDialog = ProgressDialog.show(MainActivity.this, "", "Loading video ad...", true);
-                              rewardedAd.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, new AdEventListener() {
-                                  public void onReceiveAd(Ad ad) { hide(); play(rewardedAd); }
-                                  public void onFailedToReceiveAd(Ad ad) {
-                                      videoFallbackAd.loadAd(StartAppAd.AdMode.VIDEO, new AdEventListener() {
-                                          public void onReceiveAd(Ad a) { hide(); play(videoFallbackAd); }
-                                          public void onFailedToReceiveAd(Ad a) { hide(); fallbackCard(); }
-                                      });
-                                  }
-                              });
-                              handler.postDelayed(() -> { if (progressDialog != null && progressDialog.isShowing()) { hide(); fallbackCard(); } }, 5000);
-                          });
+                  WebSettings settings = webView.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setDatabaseEnabled(true);
+                  settings.setAllowFileAccess(true);
+                  settings.setAllowContentAccess(true);
+
+                  webView.setWebChromeClient(new WebChromeClient());
+                  webView.setWebViewClient(new WebViewClient() {
+                      @Override
+                      public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                          if (url.startsWith("whatsapp:")
+                                  || url.contains("api.whatsapp.com")
+                                  || url.startsWith("intent:")) {
+                              try {
+                                  Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                  startActivity(intent);
+                                  return true;
+                              } catch (Exception e) {
+                                  return false;
+                              }
+                          }
+                          return false;
                       }
-                      @JavascriptInterface
-                      public void showInterstitial() { runOnUiThread(() -> StartAppAd.showAd(MainActivity.this)); }
-                  }, "AndroidAd");
+                  });
 
+                  webView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   webView.loadUrl("file:///android_asset/index.html");
-                  FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
-                  wp.bottomMargin = 130;
-                  root.addView(webView, wp);
 
-                  Banner b = new Banner(this);
-                  FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, -2);
-                  bp.gravity = Gravity.BOTTOM;
-                  root.addView(b, bp);
+                  int bannerHeightPx = (int) TypedValue.applyDimension(
+                          TypedValue.COMPLEX_UNIT_DIP,
+                          50,
+                          getResources().getDisplayMetrics()
+                  );
+
+                  FrameLayout.LayoutParams webParams = new FrameLayout.LayoutParams(
+                          FrameLayout.LayoutParams.MATCH_PARENT,
+                          FrameLayout.LayoutParams.MATCH_PARENT
+                  );
+                  webParams.bottomMargin = bannerHeightPx;
+                  root.addView(webView, webParams);
+
                   setContentView(root);
 
-                  handler.postDelayed(new Runnable() {
-                      public void run() {
-                          if (!isShowing) StartAppAd.showAd(MainActivity.this);
-                          handler.postDelayed(this, 45000);
-                      }
-                  }, 20000);
+                  initUnityAds();
               }
 
-              private void loadAds() {
-                  rewardedAd.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, new AdEventListener() { public void onReceiveAd(Ad ad){} public void onFailedToReceiveAd(Ad ad){} });
-                  videoFallbackAd.loadAd(StartAppAd.AdMode.VIDEO, new AdEventListener() { public void onReceiveAd(Ad ad){} public void onFailedToReceiveAd(Ad ad){} });
-              }
-
-              private void hide() { if (progressDialog != null) progressDialog.dismiss(); }
-
-              private void play(StartAppAd ad) {
-                  isShowing = true;
-                  ad.setVideoListener(() -> webView.post(() -> webView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();}", null)));
-                  ad.showAd(new AdDisplayListener() {
-                      public void adHidden(Ad a) { isShowing = false; loadAds(); }
-                      public void adDisplayed(Ad a) {}
-                      public void adClicked(Ad a) {}
-                      public void adNotDisplayed(Ad a) { isShowing = false; fallbackCard(); }
-                  });
-              }
-
-              private void fallbackCard() {
-                  isShowing = true;
-                  StartAppAd card = new StartAppAd(this);
-                  card.loadAd(StartAppAd.AdMode.AUTOMATIC, new AdEventListener() {
-                      public void onReceiveAd(Ad a) {
-                          card.showAd(new AdDisplayListener() {
-                              public void adHidden(Ad ad) { isShowing = false; reward(); loadAds(); }
-                              public void adDisplayed(Ad ad) {}
-                              public void adClicked(Ad ad) {}
-                              public void adNotDisplayed(Ad ad) { isShowing = false; reward(); loadAds(); }
+              private void initUnityAds() {
+                  UnityAds.initialize(this, UNITY_GAME_ID, TEST_MODE, new IUnityAdsInitializationListener() {
+                      @Override
+                      public void onInitializationComplete() {
+                          runOnUiThread(() -> {
+                              loadRewardedAd();
+                              loadInterstitialAd();
+                              loadBannerAd();
                           });
                       }
-                      public void onFailedToReceiveAd(Ad a) { isShowing = false; reward(); loadAds(); }
+
+                      @Override
+                      public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) {
+                          runOnUiThread(() -> 
+                              Toast.makeText(MainActivity.this, "Unity init failed: " + message, Toast.LENGTH_SHORT).show()
+                          );
+                      }
                   });
               }
 
-              private void reward() {
-                  webView.post(() -> webView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();}", null));
+              private void loadBannerAd() {
+                  runOnUiThread(() -> {
+                      if (bottomBanner != null) {
+                          root.removeView(bottomBanner);
+                          bottomBanner.destroy();
+                      }
+
+                      bottomBanner = new BannerView(MainActivity.this, BANNER_PLACEMENT, new UnityBannerSize(320, 50));
+                      bottomBanner.setListener(new BannerView.IListener() {
+                          @Override
+                          public void onBannerLoaded(BannerView bannerAdView) {}
+
+                          @Override
+                          public void onBannerShown(BannerView bannerAdView) {}
+
+                          @Override
+                          public void onBannerClick(BannerView bannerAdView) {}
+
+                          @Override
+                          public void onBannerFailedToLoad(BannerView bannerAdView, BannerErrorInfo errorInfo) {}
+
+                          @Override
+                          public void onBannerLeftApplication(BannerView bannerView) {}
+                      });
+
+                      FrameLayout.LayoutParams bannerParams = new FrameLayout.LayoutParams(
+                              FrameLayout.LayoutParams.MATCH_PARENT,
+                              FrameLayout.LayoutParams.WRAP_CONTENT
+                      );
+                      bannerParams.gravity = Gravity.BOTTOM;
+                      root.addView(bottomBanner, bannerParams);
+                      bottomBanner.load();
+                  });
+              }
+
+              private void loadRewardedAd() {
+                  UnityAds.load(REWARDED_PLACEMENT, new IUnityAdsLoadListener() {
+                      @Override
+                      public void onUnityAdsAdLoaded(String placementId) {
+                          isRewardedLoaded = true;
+                      }
+
+                      @Override
+                      public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) {
+                          isRewardedLoaded = false;
+                      }
+                  });
+              }
+
+              private void loadInterstitialAd() {
+                  UnityAds.load(INTERSTITIAL_PLACEMENT, new IUnityAdsLoadListener() {
+                      @Override
+                      public void onUnityAdsAdLoaded(String placementId) {
+                          isInterstitialLoaded = true;
+                      }
+
+                      @Override
+                      public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) {
+                          isInterstitialLoaded = false;
+                      }
+                  });
+              }
+
+              public class AdBridge {
+                  @JavascriptInterface
+                  public void showRewarded() {
+                      runOnUiThread(() -> {
+                          if (isRewardedLoaded) {
+                              showUnityRewarded();
+                          } else {
+                              Toast.makeText(MainActivity.this, "Loading ad... Please wait", Toast.LENGTH_SHORT).show();
+                              loadRewardedAd();
+                          }
+                      });
+                  }
+
+                  @JavascriptInterface
+                  public void showInterstitial() {
+                      runOnUiThread(() -> {
+                          if (isInterstitialLoaded) {
+                              UnityAds.show(MainActivity.this, INTERSTITIAL_PLACEMENT, new UnityAdsShowOptions(), null);
+                              isInterstitialLoaded = false;
+                              loadInterstitialAd();
+                          } else {
+                              loadInterstitialAd();
+                          }
+                      });
+                  }
+              }
+
+              private void showUnityRewarded() {
+                  UnityAds.show(MainActivity.this, REWARDED_PLACEMENT, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
+                      @Override
+                      public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
+                          isRewardedLoaded = false;
+                          runOnUiThread(() -> 
+                              Toast.makeText(MainActivity.this, "Ad failed: " + message, Toast.LENGTH_SHORT).show()
+                          );
+                          loadRewardedAd();
+                      }
+
+                      @Override
+                      public void onUnityAdsShowStart(String placementId) {}
+
+                      @Override
+                      public void onUnityAdsShowClick(String placementId) {}
+
+                      @Override
+                      public void onUnityAdsShowComplete(String placementId, UnityAds.UnityAdsShowCompletionState state) {
+                          isRewardedLoaded = false;
+                          loadRewardedAd();
+                          if (state == UnityAds.UnityAdsShowCompletionState.COMPLETED) {
+                              triggerRewardInWeb();
+                          }
+                      }
+                  });
+              }
+
+              private void triggerRewardInWeb() {
+                  if (webView != null) {
+                      webView.post(() ->
+                              webView.evaluateJavascript(
+                                      "if(window.adMobRewardEarned){window.adMobRewardEarned();}",
+                                      null
+                              )
+                      );
+                  }
+              }
+
+              @Override
+              protected void onDestroy() {
+                  if (bottomBanner != null) {
+                      bottomBanner.destroy();
+                  }
+                  if (webView != null) {
+                      webView.destroy();
+                  }
+                  super.onDestroy();
               }
 
               @Override
               public void onBackPressed() {
-                  if (webView != null && webView.canGoBack()) webView.goBack();
-                  else super.onBackPressed();
+                  if (webView != null && webView.canGoBack()) {
+                      webView.goBack();
+                  } else {
+                      super.onBackPressed();
+                  }
               }
           }
           EOF
@@ -236,7 +467,13 @@ jobs:
         shell: bash
         run: |
           set -e
+          find app/build/outputs -type f -name "*.apk" -print
           test -f app/build/outputs/apk/release/app-release.apk
+
+      - name: Prepare APK
+        shell: bash
+        run: |
+          set -e
           mkdir -p apk-output
           cp app/build/outputs/apk/release/app-release.apk apk-output/WatchToEarn.apk
 
