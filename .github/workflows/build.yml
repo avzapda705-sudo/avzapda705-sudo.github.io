@@ -42,6 +42,10 @@ jobs:
 
           cp index.html app/src/main/assets/index.html
 
+          # Automatically inject Monetag Banners & Tags directly into assets index.html
+          MONETAG_TAGS="<script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
+          sed -i "s|</body>|${MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
+
           if [ -f "icon.png" ]; then
             sudo apt-get update && sudo apt-get install -y imagemagick
 
@@ -117,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 43
-                  versionName "5.9"
+                  versionCode 44
+                  versionName "6.0"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -333,6 +337,8 @@ jobs:
                   s.setDatabaseEnabled(true);
                   s.setAllowFileAccess(true);
                   s.setAllowContentAccess(true);
+                  s.setSupportMultipleWindows(false);
+                  s.setJavaScriptCanOpenWindowsAutomatically(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                   s.setUserAgentString(s.getUserAgentString() + " MobileApp");
                   wv.setWebChromeClient(new WebChromeClient());
@@ -442,7 +448,7 @@ jobs:
                           adDialog.dismiss();
                       }
                       if (reward && mainWebView != null) {
-                          mainWebView.post(() -> mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();}", null));
+                          mainWebView.post(() -> mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();} else if(typeof userCoins !== 'undefined'){userCoins+=10; if(typeof updateCoinDisplay==='function'){updateCoinDisplay();}}", null));
                       }
                   });
               }
