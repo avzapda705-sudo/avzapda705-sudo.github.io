@@ -42,7 +42,7 @@ jobs:
 
           cp index.html app/src/main/assets/index.html
 
-          # Real Monetag Ads Injection (Zone 11904245 and 11904271)
+          # Real Monetag Ads Injection (Zone 11904245 & 11904271)
           MONETAG_TAGS="<script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
           sed -i "s|</body>|${MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
 
@@ -121,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 46
-                  versionName "6.2"
+                  versionCode 47
+                  versionName "6.3"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -181,6 +181,7 @@ jobs:
           import android.net.http.SslError;
           import android.os.Bundle;
           import android.os.CountDownTimer;
+          import android.util.TypedValue;
           import android.view.Gravity;
           import android.view.View;
           import android.view.Window;
@@ -212,9 +213,47 @@ jobs:
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
-                  // Full screen view (removed dummy bottom banner)
+                  // Bottom space for banner
+                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 54, getResources().getDisplayMetrics());
                   FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
+                  wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
+
+                  // Bottom Banner Bar
+                  LinearLayout banner = new LinearLayout(this);
+                  banner.setBackgroundColor(Color.parseColor("#111827"));
+                  banner.setGravity(Gravity.CENTER_VERTICAL);
+                  banner.setPadding(24, 0, 24, 0);
+
+                  TextView badge = new TextView(this);
+                  badge.setText("AD");
+                  badge.setTextColor(Color.BLACK);
+                  badge.setBackgroundColor(Color.parseColor("#F59E0B"));
+                  badge.setPadding(10, 4, 10, 4);
+                  badge.setTextSize(11);
+                  banner.addView(badge);
+
+                  TextView bTxt = new TextView(this);
+                  bTxt.setText("Special Sponsored Reward Offers");
+                  bTxt.setTextColor(Color.WHITE);
+                  bTxt.setTextSize(13);
+                  bTxt.setPadding(16, 0, 0, 0);
+                  banner.addView(bTxt, new LinearLayout.LayoutParams(0, -2, 1.0f));
+
+                  Button bBtn = new Button(this);
+                  bBtn.setText("OPEN");
+                  bBtn.setTextSize(11);
+                  bBtn.setTextColor(Color.WHITE);
+                  bBtn.setBackgroundColor(Color.parseColor("#7C3AED"));
+                  banner.addView(bBtn);
+
+                  View.OnClickListener bClick = v -> showAd(false);
+                  banner.setOnClickListener(bClick);
+                  bBtn.setOnClickListener(bClick);
+
+                  FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
+                  bp.gravity = Gravity.BOTTOM;
+                  root.addView(banner, bp);
 
                   setContentView(root);
               }
