@@ -42,7 +42,7 @@ jobs:
 
           cp index.html app/src/main/assets/index.html
 
-          # Automatically inject Monetag Banners & Tags directly into assets index.html
+          # Monetag Banner and Onclick Tag injection directly with https: protocol to prevent file:// protocol error
           MONETAG_TAGS="<script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
           sed -i "s|</body>|${MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
 
@@ -121,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 44
-                  versionName "6.0"
+                  versionCode 45
+                  versionName "6.1"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -173,6 +173,7 @@ jobs:
           cat > app/src/main/java/com/watchtoearn/app/MainActivity.java <<'EOF'
           package com.watchtoearn.app;
 
+          import android.annotation.SuppressLint;
           import android.app.Activity;
           import android.app.Dialog;
           import android.content.Intent;
@@ -183,6 +184,7 @@ jobs:
           import android.os.CountDownTimer;
           import android.os.Handler;
           import android.os.Looper;
+          import android.os.Message;
           import android.util.TypedValue;
           import android.view.Gravity;
           import android.view.View;
@@ -202,6 +204,7 @@ jobs:
           public class MainActivity extends Activity {
               private WebView mainWebView;
               private Dialog adDialog;
+              private WebView adWebView;
               private CardView floatingCardAd;
               private static final String AD_URL = "https://omg10.com/4/11903025";
               private final Handler handler = new Handler(Looper.getMainLooper());
@@ -212,8 +215,8 @@ jobs:
                   FrameLayout root = new FrameLayout(this);
 
                   mainWebView = new WebView(this);
-                  setupWeb(mainWebView);
-                  mainWebView.setWebViewClient(new SafeWebClient());
+                  setupWeb(mainWebView, false);
+                  mainWebView.setWebViewClient(new InAppWebClient(mainWebView));
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
@@ -330,50 +333,70 @@ jobs:
                   root.addView(floatingCardAd, cp);
               }
 
-              private void setupWeb(WebView wv) {
+              @SuppressLint("SetJavaScriptEnabled")
+              private void setupWeb(WebView wv, boolean isAdView) {
                   WebSettings s = wv.getSettings();
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
                   s.setDatabaseEnabled(true);
                   s.setAllowFileAccess(true);
                   s.setAllowContentAccess(true);
-                  s.setSupportMultipleWindows(false);
+                  s.setSupportMultipleWindows(true);
                   s.setJavaScriptCanOpenWindowsAutomatically(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-                  s.setUserAgentString(s.getUserAgentString() + " MobileApp");
-                  wv.setWebChromeClient(new WebChromeClient());
+                  s.setUserAgentString("Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
+
+                  wv.setWebChromeClient(new WebChromeClient() {
+                      @Override
+                      public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                          // Force popup windows or click ads to open inside our ad container instead of browser
+                          showAd(false);
+                          if (adWebView != null) {
+                              WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                              transport.setWebView(adWebView);
+                              resultMsg.sendToTarget();
+                              return true;
+                          }
+                          return false;
+                      }
+                  });
               }
 
-              private class SafeWebClient extends WebViewClient {
+              private class InAppWebClient extends WebViewClient {
+                  private final WebView targetView;
+
+                  public InAppWebClient(WebView targetView) {
+                      this.targetView = targetView;
+                  }
+
                   @Override
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
+
+                      // Fix file:// relative url bug triggered by Monetag
+                      if (url.startsWith("file://") && !url.contains("android_asset")) {
+                          String fixed = url.replace("file://", "https://");
+                          view.loadUrl(fixed);
+                          return true;
+                      }
 
                       if (url.startsWith("intent://")) {
                           try {
                               Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                               if (intent != null) {
-                                  try {
-                                      startActivity(intent);
-                                  } catch (Exception e) {
-                                      String fallback = intent.getStringExtra("browser_fallback_url");
-                                      if (fallback != null) {
-                                          view.loadUrl(fallback);
-                                      }
+                                  String fallback = intent.getStringExtra("browser_fallback_url");
+                                  if (fallback != null) {
+                                      view.loadUrl(fallback);
+                                      return true;
                                   }
                               }
                           } catch (Exception ignored) {}
                           return true;
                       }
 
-                      boolean isExternal = !url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("file://");
-                      boolean isAppRedirect = url.contains("play.google.com/store") || url.contains("youtube.com") || url.contains("youtu.be");
-
-                      if (isExternal || isAppRedirect) {
-                          try {
-                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                              startActivity(intent);
-                          } catch (Exception ignored) {}
+                      if (url.startsWith("http://") || url.startsWith("https://")) {
+                          // Keep ad inside app
+                          view.loadUrl(url);
                           return true;
                       }
 
@@ -395,6 +418,8 @@ jobs:
 
               private void showAd(boolean reward) {
                   if (isFinishing()) return;
+                  if (adDialog != null && adDialog.isShowing()) return;
+
                   adDialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
                   adDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
                   adDialog.setCancelable(false);
@@ -421,11 +446,11 @@ jobs:
                   tb.addView(cb);
                   l.addView(tb);
 
-                  WebView aw = new WebView(this);
-                  setupWeb(aw);
-                  aw.setWebViewClient(new SafeWebClient());
-                  aw.loadUrl(AD_URL);
-                  l.addView(aw, new LinearLayout.LayoutParams(-1, 0, 1.0f));
+                  adWebView = new WebView(this);
+                  setupWeb(adWebView, true);
+                  adWebView.setWebViewClient(new InAppWebClient(adWebView));
+                  adWebView.loadUrl(AD_URL);
+                  l.addView(adWebView, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
                   adDialog.setContentView(l);
                   adDialog.show();
@@ -444,7 +469,11 @@ jobs:
 
                   cb.setOnClickListener(v -> {
                       if (adDialog != null && adDialog.isShowing()) {
-                          aw.loadUrl("about:blank");
+                          if (adWebView != null) {
+                              adWebView.loadUrl("about:blank");
+                              adWebView.destroy();
+                              adWebView = null;
+                          }
                           adDialog.dismiss();
                       }
                       if (reward && mainWebView != null) {
@@ -457,6 +486,7 @@ jobs:
               protected void onDestroy() {
                   handler.removeCallbacksAndMessages(null);
                   if (adDialog != null && adDialog.isShowing()) adDialog.dismiss();
+                  if (adWebView != null) adWebView.destroy();
                   if (mainWebView != null) mainWebView.destroy();
                   super.onDestroy();
               }
