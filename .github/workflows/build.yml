@@ -130,8 +130,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 23
-                  versionName "3.5"
+                  versionCode 24
+                  versionName "4.0"
               }
 
               compileOptions {
@@ -225,6 +225,8 @@ jobs:
               private StartAppAd rewardedAd;
               private ProgressDialog progressDialog;
               private Handler handler = new Handler(Looper.getMainLooper());
+              private Runnable bgCardRunnable;
+              private boolean isAdDisplaying = false;
 
               private static final String STARTAPP_APP_ID = "208761301";
 
@@ -232,9 +234,8 @@ jobs:
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  // Test mode enabled for sample video ads
+                  // Start.io initialization
                   StartAppSDK.init(this, STARTAPP_APP_ID, false);
-                  StartAppSDK.setTestAdsEnabled(true);
                   StartAppSDK.enableReturnAds(false);
                   StartAppSDK.setUserConsent(this, "pas", System.currentTimeMillis(), true);
 
@@ -286,6 +287,7 @@ jobs:
                   webParams.bottomMargin = bannerHeightPx;
                   root.addView(webView, webParams);
 
+                  // 24hr Bottom Banner Ad
                   bottomBanner = new Banner(this);
                   FrameLayout.LayoutParams bannerParams = new FrameLayout.LayoutParams(
                           FrameLayout.LayoutParams.MATCH_PARENT,
@@ -295,6 +297,22 @@ jobs:
                   root.addView(bottomBanner, bannerParams);
 
                   setContentView(root);
+
+                  // Auto background Card Ads (every 45s)
+                  setupBackgroundCardAds();
+              }
+
+              private void setupBackgroundCardAds() {
+                  bgCardRunnable = new Runnable() {
+                      @Override
+                      public void run() {
+                          if (!isAdDisplaying && !isFinishing()) {
+                              StartAppAd.showAd(MainActivity.this);
+                          }
+                          handler.postDelayed(this, 45000); // 45 seconds interval
+                      }
+                  };
+                  handler.postDelayed(bgCardRunnable, 20000); // First card ad after 20s
               }
 
               private void preloadRewardedAd() {
@@ -318,6 +336,7 @@ jobs:
               }
 
               public class AdBridge {
+                  // For Spin, Watch & Claim (Pure Video Ads)
                   @JavascriptInterface
                   public void showRewarded() {
                       runOnUiThread(() -> {
@@ -329,7 +348,7 @@ jobs:
                           }
 
                           progressDialog = new ProgressDialog(MainActivity.this);
-                          progressDialog.setMessage("Loading Test Video Ad...");
+                          progressDialog.setMessage("Loading Video Ad...");
                           progressDialog.setCancelable(false);
                           progressDialog.show();
 
@@ -343,23 +362,24 @@ jobs:
                               @Override
                               public void onFailedToReceiveAd(Ad ad) {
                                   dismissLoading();
-                                  Toast.makeText(MainActivity.this, "Test video load failed", Toast.LENGTH_SHORT).show();
+                                  Toast.makeText(MainActivity.this, "Video loading, try in a moment", Toast.LENGTH_SHORT).show();
                               }
                           });
 
                           handler.postDelayed(() -> {
                               if (progressDialog != null && progressDialog.isShowing()) {
                                   dismissLoading();
-                                  Toast.makeText(MainActivity.this, "Timeout loading video", Toast.LENGTH_SHORT).show();
+                                  Toast.makeText(MainActivity.this, "Video loading, try again", Toast.LENGTH_SHORT).show();
                               }
                           }, 8000);
                       });
                   }
 
+                  // Instant Card Ad trigger
                   @JavascriptInterface
                   public void showInterstitial() {
                       runOnUiThread(() -> {
-                          if (!isFinishing()) {
+                          if (!isFinishing() && !isAdDisplaying) {
                               StartAppAd.showAd(MainActivity.this);
                           }
                       });
@@ -367,6 +387,7 @@ jobs:
               }
 
               private void playVideoAd() {
+                  isAdDisplaying = true;
                   rewardedAd.setVideoListener(new VideoListener() {
                       @Override
                       public void onVideoCompleted() {
@@ -377,6 +398,7 @@ jobs:
                   rewardedAd.showAd(new AdDisplayListener() {
                       @Override
                       public void adHidden(Ad ad) {
+                          isAdDisplaying = false;
                           preloadRewardedAd();
                       }
 
@@ -388,6 +410,7 @@ jobs:
 
                       @Override
                       public void adNotDisplayed(Ad ad) {
+                          isAdDisplaying = false;
                           preloadRewardedAd();
                       }
                   });
@@ -407,6 +430,9 @@ jobs:
               @Override
               protected void onDestroy() {
                   dismissLoading();
+                  if (handler != null && bgCardRunnable != null) {
+                      handler.removeCallbacks(bgCardRunnable);
+                  }
                   super.onDestroy();
               }
 
