@@ -121,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 48
-                  versionName "6.4"
+                  versionCode 49
+                  versionName "6.5"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -137,6 +137,7 @@ jobs:
           }
           dependencies {
               implementation "androidx.annotation:annotation:1.9.1"
+              implementation "androidx.webkit:webkit:1.12.1"
           }
           EOF
 
@@ -181,6 +182,7 @@ jobs:
           import android.net.http.SslError;
           import android.os.Bundle;
           import android.os.CountDownTimer;
+          import android.os.Message;
           import android.util.TypedValue;
           import android.view.Gravity;
           import android.view.View;
@@ -188,6 +190,8 @@ jobs:
           import android.webkit.JavascriptInterface;
           import android.webkit.SslErrorHandler;
           import android.webkit.WebChromeClient;
+          import android.webkit.WebResourceRequest;
+          import android.webkit.WebResourceResponse;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
@@ -195,11 +199,13 @@ jobs:
           import android.widget.FrameLayout;
           import android.widget.LinearLayout;
           import android.widget.TextView;
+          import androidx.webkit.WebViewAssetLoader;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
               private Dialog adDialog;
               private WebView adWebView;
+              private WebViewAssetLoader assetLoader;
               private static final String AD_URL = "https://omg10.com/4/11903025";
 
               @Override
@@ -207,13 +213,19 @@ jobs:
                   super.onCreate(savedInstanceState);
                   FrameLayout root = new FrameLayout(this);
 
-                  mainWebView = new WebView(this);
-                  setupWeb(mainWebView);
-                  mainWebView.setWebViewClient(new InAppWebClient());
-                  mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
-                  mainWebView.loadUrl("file:///android_asset/index.html");
+                  assetLoader = new WebViewAssetLoader.Builder()
+                          .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+                          .build();
 
-                  // Bottom margin for the banner to avoid cutting navigation bar
+                  mainWebView = new WebView(this);
+                  setupWeb(mainWebView, false);
+                  mainWebView.setWebViewClient(new InAppWebClient(false));
+                  mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
+                  
+                  // Load securely over https domain so Monetag never falls back to file:// protocol
+                  mainWebView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+
+                  // Bottom margin for the banner
                   int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 54, getResources().getDisplayMetrics());
                   FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
                   wp.bottomMargin = bHeight;
@@ -259,26 +271,56 @@ jobs:
               }
 
               @SuppressLint("SetJavaScriptEnabled")
-              private void setupWeb(WebView wv) {
+              private void setupWeb(WebView wv, boolean isDialogAd) {
                   WebSettings s = wv.getSettings();
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
                   s.setDatabaseEnabled(true);
                   s.setAllowFileAccess(true);
                   s.setAllowContentAccess(true);
-                  s.setSupportMultipleWindows(false);
+                  s.setSupportMultipleWindows(true);
                   s.setJavaScriptCanOpenWindowsAutomatically(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                   s.setUserAgentString("Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
-                  wv.setWebChromeClient(new WebChromeClient());
+
+                  wv.setWebChromeClient(new WebChromeClient() {
+                      @Override
+                      public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                          if (!isDialogAd) {
+                              showAd(false);
+                              if (adWebView != null) {
+                                  WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                                  transport.setWebView(adWebView);
+                                  resultMsg.sendToTarget();
+                                  return true;
+                              }
+                          }
+                          return false;
+                      }
+                  });
               }
 
               private class InAppWebClient extends WebViewClient {
+                  private final boolean isAdView;
+
+                  public InAppWebClient(boolean isAdView) {
+                      this.isAdView = isAdView;
+                  }
+
+                  @Override
+                  public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                      if (!isAdView && assetLoader != null) {
+                          WebResourceResponse response = assetLoader.shouldInterceptRequest(request.getUrl());
+                          if (response != null) return response;
+                      }
+                      return super.shouldInterceptRequest(view, request);
+                  }
+
                   @Override
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
-                      // Fix relative URL file:// protocol error from Monetag
+                      // Fix any stray file:// attempts
                       if (url.startsWith("file://") && !url.contains("android_asset")) {
                           view.loadUrl(url.replace("file://", "https://"));
                           return true;
@@ -298,6 +340,7 @@ jobs:
                           return true;
                       }
 
+                      // Keep ad navigation strictly inside the container
                       if (url.startsWith("http://") || url.startsWith("https://")) {
                           view.loadUrl(url);
                           return true;
@@ -350,8 +393,8 @@ jobs:
                   l.addView(tb);
 
                   adWebView = new WebView(this);
-                  setupWeb(adWebView);
-                  adWebView.setWebViewClient(new InAppWebClient());
+                  setupWeb(adWebView, true);
+                  adWebView.setWebViewClient(new InAppWebClient(true));
                   adWebView.loadUrl(AD_URL);
                   l.addView(adWebView, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
