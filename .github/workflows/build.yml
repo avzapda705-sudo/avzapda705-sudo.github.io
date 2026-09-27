@@ -121,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 60
-                  versionName "7.6"
+                  versionCode 61
+                  versionName "7.7"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -197,13 +197,24 @@ jobs:
           import android.widget.TextView;
           import java.io.InputStream;
           import java.nio.charset.StandardCharsets;
+          import java.util.Random;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
               private Dialog adDialog;
               private WebView adWebView;
-              private static final String BASE_AD_URL = "https://omg10.com/4/11903025";
               private static final String VERIFIED_DOMAIN = "https://avzapda705-sudo.github.io/";
+
+              // Monetag zones rotation array
+              private final String[] AD_URLS = new String[] {
+                  "https://omg10.com/4/11903025",
+                  "https://nap5k.com/tag.min.js?zone=11904245",
+                  "https://al5sm.com/tag.min.js?zone=11904271",
+                  "https://n6wxm.com/vignette.min.js?zone=11904980",
+                  "https://quge5.com/88/tag.min.js?zone=287797"
+              };
+
+              private final Random random = new Random();
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
@@ -403,7 +414,6 @@ jobs:
                   adWebView = new WebView(this);
                   setupWeb(adWebView, true);
 
-                  // Clear session and cache completely for fresh ad inventory
                   adWebView.clearCache(true);
                   adWebView.clearHistory();
                   CookieManager.getInstance().removeAllCookies(null);
@@ -421,9 +431,12 @@ jobs:
                       }
                   });
 
-                  // Cache-buster random query parameter
-                  String dynamicAdUrl = BASE_AD_URL + "?cb=" + System.currentTimeMillis() + "&rnd=" + (int)(Math.random() * 10000);
+                  // Select random Monetag zone URL
+                  int idx = random.nextInt(AD_URLS.length);
+                  String pickedUrl = AD_URLS[idx];
+                  String dynamicAdUrl = pickedUrl + (pickedUrl.contains("?") ? "&" : "?") + "cb=" + System.currentTimeMillis();
                   adWebView.loadUrl(dynamicAdUrl);
+
                   l.addView(adWebView, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
                   adDialog.setContentView(l);
