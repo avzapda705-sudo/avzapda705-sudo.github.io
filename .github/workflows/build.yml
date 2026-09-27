@@ -126,8 +126,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 35
-                  versionName "5.1"
+                  versionCode 36
+                  versionName "5.2"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -238,6 +238,7 @@ jobs:
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
 
+                  // Bottom Banner
                   LinearLayout banner = new LinearLayout(this);
                   banner.setBackgroundColor(Color.parseColor("#111827"));
                   banner.setGravity(Gravity.CENTER_VERTICAL);
@@ -273,27 +274,30 @@ jobs:
                   bp.gravity = Gravity.BOTTOM;
                   root.addView(banner, bp);
 
+                  // Floating Card
                   createCard(root);
                   setContentView(root);
 
+                  // Card Ad shows in 4 seconds, stays for 9 seconds, repeats every 30 seconds
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
                           if (!isFinishing() && floatingCardAd != null) {
                               floatingCardAd.setVisibility(View.VISIBLE);
+                              floatingCardAd.bringToFront();
                               handler.postDelayed(() -> {
                                   if (floatingCardAd != null) floatingCardAd.setVisibility(View.GONE);
-                              }, 8000);
+                              }, 9000);
                           }
-                          handler.postDelayed(this, 35000);
+                          handler.postDelayed(this, 30000);
                       }
-                  }, 12000);
+                  }, 4000);
               }
 
               private void createCard(FrameLayout root) {
                   floatingCardAd = new CardView(this);
                   floatingCardAd.setRadius(20);
-                  floatingCardAd.setCardElevation(16);
+                  floatingCardAd.setCardElevation(20);
                   floatingCardAd.setCardBackgroundColor(Color.WHITE);
                   floatingCardAd.setVisibility(View.GONE);
 
@@ -303,7 +307,7 @@ jobs:
 
                   TextView ic = new TextView(this);
                   ic.setText("🎁");
-                  ic.setTextSize(20);
+                  ic.setTextSize(22);
                   cl.addView(ic);
 
                   LinearLayout tl = new LinearLayout(this);
@@ -313,7 +317,7 @@ jobs:
                   TextView h = new TextView(this);
                   h.setText("Special Bonus Available!");
                   h.setTextColor(Color.BLACK);
-                  h.setTextSize(13);
+                  h.setTextSize(14);
 
                   TextView s = new TextView(this);
                   s.setText("Tap to view offer & earn coins");
@@ -326,9 +330,9 @@ jobs:
 
                   TextView close = new TextView(this);
                   close.setText("✖");
-                  close.setTextSize(16);
+                  close.setTextSize(18);
                   close.setTextColor(Color.GRAY);
-                  close.setPadding(8, 8, 8, 8);
+                  close.setPadding(10, 10, 10, 10);
                   close.setOnClickListener(v -> floatingCardAd.setVisibility(View.GONE));
                   cl.addView(close);
 
@@ -340,7 +344,7 @@ jobs:
                   floatingCardAd.addView(cl);
                   FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(-1, -2);
                   cp.gravity = Gravity.TOP;
-                  cp.setMargins(24, 60, 24, 0);
+                  cp.setMargins(24, 70, 24, 0);
                   root.addView(floatingCardAd, cp);
               }
 
@@ -382,7 +386,7 @@ jobs:
                   TextView tt = new TextView(this);
                   tt.setTextColor(Color.parseColor("#FBBF24"));
                   tt.setTextSize(15);
-                  tt.setText("Reward in: 10s");
+                  tt.setText("Reward in: 30s");
                   tb.addView(tt, new LinearLayout.LayoutParams(0, -2, 1.0f));
 
                   Button cb = new Button(this);
@@ -402,7 +406,8 @@ jobs:
                   adDialog.setContentView(l);
                   adDialog.show();
 
-                  new CountDownTimer(10000, 1000) {
+                  // 30 Seconds Timer
+                  new CountDownTimer(30000, 1000) {
                       @Override
                       public void onTick(long m) {
                           tt.setText("Reward in: " + (m / 1000 + 1) + "s");
