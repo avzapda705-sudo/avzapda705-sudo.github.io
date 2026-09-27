@@ -42,8 +42,8 @@ jobs:
 
           cp index.html app/src/main/assets/index.html
 
-          # Monetag All-in-One Integration
-          ALL_MONETAG_TAGS="<script src=\"https://quge5.com/88/tag.min.js\" data-zone=\"287797\" async data-cfasync=\"false\"></script><script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904980',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
+          # Monetag MultiTag & Interstitial Integration in Main App
+          ALL_MONETAG_TAGS="<script src=\"https://quge5.com/88/tag.min.js\" data-zone=\"287797\" async data-cfasync=\"false\"></script><script>(function(s){s.dataset.zone='11904980',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
           sed -i "s|</body>|${ALL_MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
 
           if [ -f "icon.png" ]; then
@@ -121,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 55
-                  versionName "7.1"
+                  versionCode 56
+                  versionName "7.2"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -185,7 +185,6 @@ jobs:
           import android.view.Gravity;
           import android.view.View;
           import android.view.Window;
-          import android.view.WindowManager;
           import android.webkit.JavascriptInterface;
           import android.webkit.SslErrorHandler;
           import android.webkit.WebChromeClient;
@@ -198,15 +197,19 @@ jobs:
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
+              private WebView topAdView;
+              private WebView bottomAdView;
               private Dialog adDialog;
               private WebView adWebView;
               private static final String AD_URL = "https://omg10.com/4/11903025";
+
+              // Real Live Monetag Ad HTML with MultiTag (287797) & In-Page Push (11904245)
+              private static final String LIVE_BANNER_HTML = "<!DOCTYPE html><html><head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><style>body{margin:0;padding:0;background:#050b1e;display:flex;align-items:center;justify-content:center;height:100%;overflow:hidden;}</style></head><body><script src=\"https://quge5.com/88/tag.min.js\" data-zone=\"287797\" async data-cfasync=\"false\"></script><script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script></body></html>";
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  // Calculate Status Bar Height so Top Banner is never pushed off-screen
                   int statusBarHeight = 0;
                   int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
                   if (resourceId > 0) {
@@ -218,44 +221,17 @@ jobs:
                   root.setBackgroundColor(Color.parseColor("#050b1e"));
                   root.setPadding(0, statusBarHeight, 0, 0);
 
-                  int topHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 46, getResources().getDisplayMetrics());
-                  int bottomHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 50, getResources().getDisplayMetrics());
+                  int bannerHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 52, getResources().getDisplayMetrics());
 
-                  // 1. TOP BANNER AD (Placed right below Status Bar)
-                  LinearLayout topBanner = new LinearLayout(this);
-                  topBanner.setBackgroundColor(Color.parseColor("#1E1B4B"));
-                  topBanner.setGravity(Gravity.CENTER_VERTICAL);
-                  topBanner.setPadding(20, 0, 20, 0);
+                  // 1. TOP REAL LIVE BANNER AD
+                  topAdView = new WebView(this);
+                  setupWeb(topAdView);
+                  topAdView.setBackgroundColor(Color.parseColor("#0d1527"));
+                  topAdView.setWebViewClient(new ExternalAdLinkClient());
+                  topAdView.loadDataWithBaseURL("https://avzapda705-sudo.github.io/", LIVE_BANNER_HTML, "text/html", "UTF-8", null);
+                  root.addView(topAdView, new LinearLayout.LayoutParams(-1, bannerHeight));
 
-                  TextView topBadge = new TextView(this);
-                  topBadge.setText("HOT");
-                  topBadge.setTextColor(Color.WHITE);
-                  topBadge.setBackgroundColor(Color.parseColor("#EC4899"));
-                  topBadge.setPadding(10, 4, 10, 4);
-                  topBadge.setTextSize(10);
-                  topBanner.addView(topBadge);
-
-                  TextView topTxt = new TextView(this);
-                  topTxt.setText("Tap to Claim Free Bonus Coins!");
-                  topTxt.setTextColor(Color.parseColor("#FDE047"));
-                  topTxt.setTextSize(12);
-                  topTxt.setPadding(16, 0, 0, 0);
-                  topBanner.addView(topTxt, new LinearLayout.LayoutParams(0, -2, 1.0f));
-
-                  Button topBtn = new Button(this);
-                  topBtn.setText("CLAIM");
-                  topBtn.setTextSize(10);
-                  topBtn.setTextColor(Color.WHITE);
-                  topBtn.setBackgroundColor(Color.parseColor("#6366F1"));
-                  topBanner.addView(topBtn);
-
-                  View.OnClickListener topClick = v -> showAd(false);
-                  topBanner.setOnClickListener(topClick);
-                  topBtn.setOnClickListener(topClick);
-
-                  root.addView(topBanner, new LinearLayout.LayoutParams(-1, topHeight));
-
-                  // 2. MAIN WEBVIEW (In the middle)
+                  // 2. MAIN APP WEBVIEW
                   mainWebView = new WebView(this);
                   setupWeb(mainWebView);
                   mainWebView.setWebViewClient(new InAppWebClient());
@@ -265,39 +241,13 @@ jobs:
                   LinearLayout.LayoutParams webParams = new LinearLayout.LayoutParams(-1, 0, 1.0f);
                   root.addView(mainWebView, webParams);
 
-                  // 3. BOTTOM BANNER AD (Right at the bottom)
-                  LinearLayout banner = new LinearLayout(this);
-                  banner.setBackgroundColor(Color.parseColor("#111827"));
-                  banner.setGravity(Gravity.CENTER_VERTICAL);
-                  banner.setPadding(20, 0, 20, 0);
-
-                  TextView badge = new TextView(this);
-                  badge.setText("AD");
-                  badge.setTextColor(Color.BLACK);
-                  badge.setBackgroundColor(Color.parseColor("#F59E0B"));
-                  badge.setPadding(10, 4, 10, 4);
-                  badge.setTextSize(10);
-                  banner.addView(badge);
-
-                  TextView bTxt = new TextView(this);
-                  bTxt.setText("Special Sponsored Reward Offers");
-                  bTxt.setTextColor(Color.WHITE);
-                  bTxt.setTextSize(12);
-                  bTxt.setPadding(16, 0, 0, 0);
-                  banner.addView(bTxt, new LinearLayout.LayoutParams(0, -2, 1.0f));
-
-                  Button bBtn = new Button(this);
-                  bBtn.setText("OPEN");
-                  bBtn.setTextSize(10);
-                  bBtn.setTextColor(Color.WHITE);
-                  bBtn.setBackgroundColor(Color.parseColor("#7C3AED"));
-                  banner.addView(bBtn);
-
-                  View.OnClickListener bClick = v -> showAd(false);
-                  banner.setOnClickListener(bClick);
-                  bBtn.setOnClickListener(bClick);
-
-                  root.addView(banner, new LinearLayout.LayoutParams(-1, bottomHeight));
+                  // 3. BOTTOM REAL LIVE BANNER AD
+                  bottomAdView = new WebView(this);
+                  setupWeb(bottomAdView);
+                  bottomAdView.setBackgroundColor(Color.parseColor("#0d1527"));
+                  bottomAdView.setWebViewClient(new ExternalAdLinkClient());
+                  bottomAdView.loadDataWithBaseURL("https://avzapda705-sudo.github.io/", LIVE_BANNER_HTML, "text/html", "UTF-8", null);
+                  root.addView(bottomAdView, new LinearLayout.LayoutParams(-1, bannerHeight));
 
                   setContentView(root);
               }
@@ -315,6 +265,26 @@ jobs:
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                   s.setUserAgentString("Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
                   wv.setWebChromeClient(new WebChromeClient());
+              }
+
+              // Handle clicks on real live banner ads to open in browser / external
+              private class ExternalAdLinkClient extends WebViewClient {
+                  @Override
+                  public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                      if (url != null && (url.startsWith("http://") || url.startsWith("https://"))) {
+                          try {
+                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                              startActivity(intent);
+                              return true;
+                          } catch (Exception ignored) {}
+                      }
+                      return false;
+                  }
+
+                  @Override
+                  public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                      handler.proceed();
+                  }
               }
 
               private class InAppWebClient extends WebViewClient {
@@ -432,6 +402,8 @@ jobs:
               protected void onDestroy() {
                   if (adDialog != null && adDialog.isShowing()) adDialog.dismiss();
                   if (adWebView != null) adWebView.destroy();
+                  if (topAdView != null) topAdView.destroy();
+                  if (bottomAdView != null) bottomAdView.destroy();
                   if (mainWebView != null) mainWebView.destroy();
                   super.onDestroy();
               }
