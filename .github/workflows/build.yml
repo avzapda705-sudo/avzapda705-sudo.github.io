@@ -130,8 +130,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 24
-                  versionName "4.0"
+                  versionCode 25
+                  versionName "4.1"
               }
 
               compileOptions {
@@ -207,7 +207,6 @@ jobs:
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
           import android.widget.FrameLayout;
-          import android.widget.Toast;
 
           import com.startapp.sdk.adsbase.Ad;
           import com.startapp.sdk.adsbase.StartAppAd;
@@ -223,6 +222,7 @@ jobs:
               private Banner bottomBanner;
               private FrameLayout root;
               private StartAppAd rewardedAd;
+              private StartAppAd videoFallbackAd;
               private ProgressDialog progressDialog;
               private Handler handler = new Handler(Looper.getMainLooper());
               private Runnable bgCardRunnable;
@@ -234,13 +234,13 @@ jobs:
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  // Start.io initialization
                   StartAppSDK.init(this, STARTAPP_APP_ID, false);
                   StartAppSDK.enableReturnAds(false);
                   StartAppSDK.setUserConsent(this, "pas", System.currentTimeMillis(), true);
 
                   rewardedAd = new StartAppAd(this);
-                  preloadRewardedAd();
+                  videoFallbackAd = new StartAppAd(this);
+                  preloadAds();
 
                   root = new FrameLayout(this);
 
@@ -287,7 +287,6 @@ jobs:
                   webParams.bottomMargin = bannerHeightPx;
                   root.addView(webView, webParams);
 
-                  // 24hr Bottom Banner Ad
                   bottomBanner = new Banner(this);
                   FrameLayout.LayoutParams bannerParams = new FrameLayout.LayoutParams(
                           FrameLayout.LayoutParams.MATCH_PARENT,
@@ -297,8 +296,6 @@ jobs:
                   root.addView(bottomBanner, bannerParams);
 
                   setContentView(root);
-
-                  // Auto background Card Ads (every 45s)
                   setupBackgroundCardAds();
               }
 
@@ -309,15 +306,24 @@ jobs:
                           if (!isAdDisplaying && !isFinishing()) {
                               StartAppAd.showAd(MainActivity.this);
                           }
-                          handler.postDelayed(this, 45000); // 45 seconds interval
+                          handler.postDelayed(this, 45000);
                       }
                   };
-                  handler.postDelayed(bgCardRunnable, 20000); // First card ad after 20s
+                  handler.postDelayed(bgCardRunnable, 20000);
               }
 
-              private void preloadRewardedAd() {
+              private void preloadAds() {
                   if (rewardedAd != null) {
                       rewardedAd.loadAd(StartAppAd.AdMode.REWARDED_VIDEO, new AdEventListener() {
+                          @Override
+                          public void onReceiveAd(Ad ad) {}
+
+                          @Override
+                          public void onFailedToReceiveAd(Ad ad) {}
+                      });
+                  }
+                  if (videoFallbackAd != null) {
+                      videoFallbackAd.loadAd(StartAppAd.AdMode.VIDEO, new AdEventListener() {
                           @Override
                           public void onReceiveAd(Ad ad) {}
 
@@ -336,19 +342,26 @@ jobs:
               }
 
               public class AdBridge {
-                  // For Spin, Watch & Claim (Pure Video Ads)
                   @JavascriptInterface
                   public void showRewarded() {
                       runOnUiThread(() -> {
                           if (isFinishing()) return;
 
+                          // ૧. જો Rewarded Video રેડી હોય તો સીધો પ્લે કરવો
                           if (rewardedAd != null && rewardedAd.isReady()) {
-                              playVideoAd();
+                              playVideo(rewardedAd);
                               return;
                           }
 
+                          // ૨. જો Regular Video રેડી હોય તો તે પ્લે કરવો
+                          if (videoFallbackAd != null && videoFallbackAd.isReady()) {
+                              playVideo(videoFallbackAd);
+                              return;
+                          }
+
+                          // ૩. બંને લોડિંગમાં હોય તો પ્રોગ્રેસ બાર બતાવીને ફટાફટ ફેચ કરવું
                           progressDialog = new ProgressDialog(MainActivity.this);
-                          progressDialog.setMessage("Loading Video Ad...");
+                          progressDialog.setMessage("Loading video ad...");
                           progressDialog.setCancelable(false);
                           progressDialog.show();
 
@@ -356,26 +369,38 @@ jobs:
                               @Override
                               public void onReceiveAd(Ad ad) {
                                   dismissLoading();
-                                  playVideoAd();
+                                  playVideo(rewardedAd);
                               }
 
                               @Override
                               public void onFailedToReceiveAd(Ad ad) {
-                                  dismissLoading();
-                                  Toast.makeText(MainActivity.this, "Video loading, try in a moment", Toast.LENGTH_SHORT).show();
+                                  // Rewarded ના મળે તો સાદો Interstitial Video લાવવો
+                                  videoFallbackAd.loadAd(StartAppAd.AdMode.VIDEO, new AdEventListener() {
+                                      @Override
+                                      public void onReceiveAd(Ad ad) {
+                                          dismissLoading();
+                                          playVideo(videoFallbackAd);
+                                      }
+
+                                      @Override
+                                      public void onFailedToReceiveAd(Ad ad) {
+                                          dismissLoading();
+                                          // કોઈ વીડિયો ન હોય તો કાર્ડ બતાવીને કોઈન આપી દેવા જેથી યુઝર અટકે નહીં
+                                          showEmergencyAd();
+                                      }
+                                  });
                               }
                           });
 
                           handler.postDelayed(() -> {
                               if (progressDialog != null && progressDialog.isShowing()) {
                                   dismissLoading();
-                                  Toast.makeText(MainActivity.this, "Video loading, try again", Toast.LENGTH_SHORT).show();
+                                  showEmergencyAd();
                               }
-                          }, 8000);
+                          }, 5000);
                       });
                   }
 
-                  // Instant Card Ad trigger
                   @JavascriptInterface
                   public void showInterstitial() {
                       runOnUiThread(() -> {
@@ -386,20 +411,20 @@ jobs:
                   }
               }
 
-              private void playVideoAd() {
+              private void playVideo(StartAppAd adToPlay) {
                   isAdDisplaying = true;
-                  rewardedAd.setVideoListener(new VideoListener() {
+                  adToPlay.setVideoListener(new VideoListener() {
                       @Override
                       public void onVideoCompleted() {
                           triggerRewardInWeb();
                       }
                   });
 
-                  rewardedAd.showAd(new AdDisplayListener() {
+                  adToPlay.showAd(new AdDisplayListener() {
                       @Override
                       public void adHidden(Ad ad) {
                           isAdDisplaying = false;
-                          preloadRewardedAd();
+                          preloadAds();
                       }
 
                       @Override
@@ -411,7 +436,45 @@ jobs:
                       @Override
                       public void adNotDisplayed(Ad ad) {
                           isAdDisplaying = false;
-                          preloadRewardedAd();
+                          showEmergencyAd();
+                      }
+                  });
+              }
+
+              private void showEmergencyAd() {
+                  isAdDisplaying = true;
+                  StartAppAd emergencyAd = new StartAppAd(MainActivity.this);
+                  emergencyAd.loadAd(StartAppAd.AdMode.AUTOMATIC, new AdEventListener() {
+                      @Override
+                      public void onReceiveAd(Ad ad) {
+                          emergencyAd.showAd(new AdDisplayListener() {
+                              @Override
+                              public void adHidden(Ad ad) {
+                                  isAdDisplaying = false;
+                                  triggerRewardInWeb();
+                                  preloadAds();
+                              }
+
+                              @Override
+                              public void adDisplayed(Ad ad) {}
+
+                              @Override
+                              public void adClicked(Ad ad) {}
+
+                              @Override
+                              public void adNotDisplayed(Ad ad) {
+                                  isAdDisplaying = false;
+                                  triggerRewardInWeb();
+                                  preloadAds();
+                              }
+                          });
+                      }
+
+                      @Override
+                      public void onFailedToReceiveAd(Ad ad) {
+                          isAdDisplaying = false;
+                          triggerRewardInWeb();
+                          preloadAds();
                       }
                   });
               }
@@ -441,38 +504,4 @@ jobs:
                   if (webView != null && webView.canGoBack()) {
                       webView.goBack();
                   } else {
-                      super.onBackPressed();
-                  }
-              }
-          }
-          EOF
-
-      - name: Build Release APK
-        shell: bash
-        run: |
-          set -e
-          gradle wrapper --gradle-version 8.2.1 --distribution-type bin
-          chmod +x gradlew
-          ./gradlew assembleRelease --no-daemon
-
-      - name: Verify APK
-        shell: bash
-        run: |
-          set -e
-          find app/build/outputs -type f -name "*.apk" -print
-          test -f app/build/outputs/apk/release/app-release.apk
-
-      - name: Prepare APK
-        shell: bash
-        run: |
-          set -e
-          mkdir -p apk-output
-          cp app/build/outputs/apk/release/app-release.apk apk-output/WatchToEarn.apk
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: WatchToEarn-APK
-          path: apk-output/WatchToEarn.apk
-          if-no-files-found: error
-          
+  
