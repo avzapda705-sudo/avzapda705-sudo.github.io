@@ -98,7 +98,6 @@ jobs:
                   gradlePluginPortal()
               }
           }
-
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
               repositories {
@@ -106,7 +105,6 @@ jobs:
                   mavenCentral()
               }
           }
-
           rootProject.name = "WatchToEarn"
           include(":app")
           EOF
@@ -121,24 +119,20 @@ jobs:
           plugins {
               id 'com.android.application'
           }
-
           android {
               namespace "com.watchtoearn.app"
               compileSdk 35
-
               defaultConfig {
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 29
-                  versionName "4.5"
+                  versionCode 33
+                  versionName "4.9"
               }
-
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
               }
-
               buildTypes {
                   release {
                       minifyEnabled false
@@ -146,19 +140,17 @@ jobs:
                   }
               }
           }
-
           dependencies {
               implementation "androidx.annotation:annotation:1.9.1"
+              implementation "androidx.cardview:cardview:1.0.0"
           }
           EOF
 
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
               <application
                   android:allowBackup="true"
                   android:label="Watch To Earn"
@@ -167,23 +159,18 @@ jobs:
                   android:supportsRtl="true"
                   android:theme="@android:style/Theme.NoTitleBar"
                   android:hardwareAccelerated="true">
-
                   <activity
                       android:name=".MainActivity"
                       android:icon="@mipmap/ic_launcher"
                       android:roundIcon="@mipmap/ic_launcher_round"
                       android:exported="true"
                       android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout">
-
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
-
                   </activity>
-
               </application>
-
           </manifest>
           EOF
 
@@ -191,79 +178,268 @@ jobs:
           package com.watchtoearn.app;
 
           import android.app.Activity;
+          import android.app.Dialog;
           import android.content.Intent;
+          import android.graphics.Color;
           import android.net.Uri;
           import android.os.Bundle;
+          import android.os.CountDownTimer;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.util.TypedValue;
+          import android.view.Gravity;
+          import android.view.View;
+          import android.view.ViewGroup;
+          import android.view.Window;
+          import android.webkit.JavascriptInterface;
           import android.webkit.WebChromeClient;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
+          import android.widget.Button;
           import android.widget.FrameLayout;
+          import android.widget.LinearLayout;
+          import android.widget.TextView;
+          import androidx.cardview.widget.CardView;
 
           public class MainActivity extends Activity {
-
-              private WebView webView;
+              private WebView mainWebView;
+              private Dialog adDialog;
+              private CardView floatingCardAd;
+              private static final String AD_URL = "https://omg10.com/4/11903025";
+              private final Handler handler = new Handler(Looper.getMainLooper());
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-
                   FrameLayout root = new FrameLayout(this);
 
-                  webView = new WebView(this);
-                  WebSettings settings = webView.getSettings();
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-                  settings.setDatabaseEnabled(true);
-                  settings.setAllowFileAccess(true);
-                  settings.setAllowContentAccess(true);
-                  settings.setMediaPlaybackRequiresUserGesture(false);
-
-                  webView.setWebChromeClient(new WebChromeClient());
-                  webView.setWebViewClient(new WebViewClient() {
+                  mainWebView = new WebView(this);
+                  setupWeb(mainWebView);
+                  mainWebView.setWebViewClient(new WebViewClient() {
                       @Override
                       public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                          // Only external apps like WhatsApp open outside
-                          if (url.startsWith("whatsapp:") || url.contains("api.whatsapp.com")) {
+                          if (url.startsWith("whatsapp:") || url.contains("api.whatsapp.com") || url.startsWith("intent:")) {
                               try {
-                                  Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                                  startActivity(intent);
+                                  startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
                                   return true;
-                              } catch (Exception e) {
+                              } catch (Exception ignored) {
                                   return false;
                               }
                           }
-                          // All ads stay inside the app
                           return false;
                       }
                   });
+                  mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
+                  mainWebView.loadUrl("file:///android_asset/index.html");
 
-                  webView.loadUrl("file:///android_asset/index.html");
+                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 50, getResources().getDisplayMetrics());
+                  FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
+                  wp.bottomMargin = bHeight;
+                  root.addView(mainWebView, wp);
 
-                  FrameLayout.LayoutParams webParams = new FrameLayout.LayoutParams(
-                          FrameLayout.LayoutParams.MATCH_PARENT,
-                          FrameLayout.LayoutParams.MATCH_PARENT
-                  );
-                  root.addView(webView, webParams);
+                  // Bottom Banner
+                  LinearLayout banner = new LinearLayout(this);
+                  banner.setBackgroundColor(Color.parseColor("#111827"));
+                  banner.setGravity(Gravity.CENTER_VERTICAL);
+                  banner.setPadding(24, 0, 24, 0);
 
+                  TextView badge = new TextView(this);
+                  badge.setText("AD");
+                  badge.setTextColor(Color.BLACK);
+                  badge.setBackgroundColor(Color.parseColor("#F59E0B"));
+                  badge.setPadding(8, 2, 8, 2);
+                  badge.setTextSize(10);
+                  banner.addView(badge);
+
+                  TextView bTxt = new TextView(this);
+                  bTxt.setText("Sponsored Rewards & Bonus");
+                  bTxt.setTextColor(Color.WHITE);
+                  bTxt.setTextSize(13);
+                  bTxt.setPadding(16, 0, 0, 0);
+                  banner.addView(bTxt, new LinearLayout.LayoutParams(0, -2, 1.0f));
+
+                  Button bBtn = new Button(this);
+                  bBtn.setText("OPEN");
+                  bBtn.setTextSize(11);
+                  bBtn.setTextColor(Color.WHITE);
+                  bBtn.setBackgroundColor(Color.parseColor("#7C3AED"));
+                  banner.addView(bBtn);
+
+                  View.OnClickListener bClick = v -> showAd(false);
+                  banner.setOnClickListener(bClick);
+                  bBtn.setOnClickListener(bClick);
+
+                  FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
+                  bp.gravity = Gravity.BOTTOM;
+                  root.addView(banner, bp);
+
+                  // Floating Card
+                  createCard(root);
                   setContentView(root);
+
+                  handler.postDelayed(new Runnable() {
+                      @Override
+                      public void run() {
+                          if (!isFinishing() && floatingCardAd != null) {
+                              floatingCardAd.setVisibility(View.VISIBLE);
+                              handler.postDelayed(() -> {
+                                  if (floatingCardAd != null) floatingCardAd.setVisibility(View.GONE);
+                              }, 8000);
+                          }
+                          handler.postDelayed(this, 35000);
+                      }
+                  }, 12000);
+              }
+
+              private void createCard(FrameLayout root) {
+                  floatingCardAd = new CardView(this);
+                  floatingCardAd.setRadius(20);
+                  floatingCardAd.setCardElevation(16);
+                  floatingCardAd.setCardBackgroundColor(Color.WHITE);
+                  floatingCardAd.setVisibility(View.GONE);
+
+                  LinearLayout cl = new LinearLayout(this);
+                  cl.setGravity(Gravity.CENTER_VERTICAL);
+                  cl.setPadding(20, 16, 20, 16);
+
+                  TextView ic = new TextView(this);
+                  ic.setText("🎁");
+                  ic.setTextSize(20);
+                  cl.addView(ic);
+
+                  LinearLayout tl = new LinearLayout(this);
+                  tl.setOrientation(LinearLayout.VERTICAL);
+                  tl.setPadding(16, 0, 8, 0);
+
+                  TextView h = new TextView(this);
+                  h.setText("Special Bonus Available!");
+                  h.setTextColor(Color.BLACK);
+                  h.setTextSize(13);
+
+                  TextView s = new TextView(this);
+                  s.setText("Tap to view offer & earn coins");
+                  s.setTextColor(Color.GRAY);
+                  s.setTextSize(11);
+
+                  tl.addView(h);
+                  tl.addView(s);
+                  cl.addView(tl, new LinearLayout.LayoutParams(0, -2, 1.0f));
+
+                  TextView close = new TextView(this);
+                  close.setText("✖");
+                  close.setTextSize(16);
+                  close.setTextColor(Color.GRAY);
+                  close.setPadding(8, 8, 8, 8);
+                  close.setOnClickListener(v -> floatingCardAd.setVisibility(View.GONE));
+                  cl.addView(close);
+
+                  cl.setOnClickListener(v -> {
+                      floatingCardAd.setVisibility(View.GONE);
+                      showAd(false);
+                  });
+
+                  floatingCardAd.addView(cl);
+                  FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(-1, -2);
+                  cp.gravity = Gravity.TOP;
+                  cp.setMargins(24, 60, 24, 0);
+                  root.addView(floatingCardAd, cp);
+              }
+
+              private void setupWeb(WebView wv) {
+                  WebSettings s = wv.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  s.setDatabaseEnabled(true);
+                  s.setAllowFileAccess(true);
+                  s.setAllowContentAccess(true);
+                  wv.setWebChromeClient(new WebChromeClient());
+              }
+
+              public class AdBridge {
+                  @JavascriptInterface
+                  public void showRewarded() {
+                      runOnUiThread(() -> showAd(true));
+                  }
+                  @JavascriptInterface
+                  public void showInterstitial() {
+                      runOnUiThread(() -> showAd(true));
+                  }
+              }
+
+              private void showAd(boolean reward) {
+                  if (isFinishing()) return;
+                  adDialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+                  adDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                  adDialog.setCancelable(false);
+
+                  LinearLayout l = new LinearLayout(this);
+                  l.setOrientation(LinearLayout.VERTICAL);
+
+                  LinearLayout tb = new LinearLayout(this);
+                  tb.setGravity(Gravity.CENTER_VERTICAL);
+                  tb.setBackgroundColor(Color.parseColor("#1F2937"));
+                  tb.setPadding(20, 16, 20, 16);
+
+                  TextView tt = new TextView(this);
+                  tt.setTextColor(Color.parseColor("#FBBF24"));
+                  tt.setTextSize(15);
+                  tt.setText("Reward in: 10s");
+                  tb.addView(tt, new LinearLayout.LayoutParams(0, -2, 1.0f));
+
+                  Button cb = new Button(this);
+                  cb.setText("✖ Close");
+                  cb.setTextColor(Color.WHITE);
+                  cb.setBackgroundColor(Color.parseColor("#EF4444"));
+                  cb.setVisibility(View.GONE);
+                  tb.addView(cb);
+                  l.addView(tb);
+
+                  WebView aw = new WebView(this);
+                  setupWeb(aw);
+                  aw.setWebViewClient(new WebViewClient());
+                  aw.loadUrl(AD_URL);
+                  l.addView(aw, new LinearLayout.LayoutParams(-1, 0, 1.0f));
+
+                  adDialog.setContentView(l);
+                  adDialog.show();
+
+                  new CountDownTimer(10000, 1000) {
+                      @Override
+                      public void onTick(long m) {
+                          tt.setText("Reward in: " + (m / 1000 + 1) + "s");
+                      }
+                      @Override
+                      public void onFinish() {
+                          tt.setText("🎉 Completed!");
+                          cb.setVisibility(View.VISIBLE);
+                      }
+                  }.start();
+
+                  cb.setOnClickListener(v -> {
+                      if (adDialog != null && adDialog.isShowing()) {
+                          aw.loadUrl("about:blank");
+                          adDialog.dismiss();
+                      }
+                      if (reward && mainWebView != null) {
+                          mainWebView.post(() -> mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();}", null));
+                      }
+                  });
               }
 
               @Override
               protected void onDestroy() {
-                  if (webView != null) {
-                      webView.destroy();
-                  }
+                  handler.removeCallbacksAndMessages(null);
+                  if (adDialog != null && adDialog.isShowing()) adDialog.dismiss();
+                  if (mainWebView != null) mainWebView.destroy();
                   super.onDestroy();
               }
 
               @Override
               public void onBackPressed() {
-                  if (webView != null && webView.canGoBack()) {
-                      webView.goBack();
-                  } else {
-                      super.onBackPressed();
-                  }
+                  if (adDialog != null && adDialog.isShowing()) return;
+                  if (mainWebView != null && mainWebView.canGoBack()) mainWebView.goBack();
+                  else super.onBackPressed();
               }
           }
           EOF
