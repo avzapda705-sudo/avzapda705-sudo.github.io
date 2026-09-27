@@ -70,7 +70,7 @@ jobs:
           </resources>
           EOF
 
-            cat > app/src/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
+            cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
               <background android:drawable="@color/ic_launcher_background" />
@@ -78,7 +78,7 @@ jobs:
           </adaptive-icon>
           EOF
 
-            cat > app/src/mipmap-anydpi-v26/ic_launcher_round.xml <<'EOF'
+            cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
               <background android:drawable="@color/ic_launcher_background" />
@@ -121,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 52
-                  versionName "6.8"
+                  versionCode 53
+                  versionName "6.9"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
