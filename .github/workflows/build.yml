@@ -41,9 +41,12 @@ jobs:
           mkdir -p app/src/main/res/mipmap-anydpi-v26
 
           cp index.html app/src/main/assets/index.html
+          if [ -f "sw.js" ]; then
+            cp sw.js app/src/main/assets/sw.js
+          fi
 
-          # Real Monetag Ads Injection (Zone 11904245 & 11904271)
-          MONETAG_TAGS="<script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
+          # Inject all Monetag zones (MultiTag, Push, OnClick, Vignette)
+          MONETAG_TAGS="<script src='https://quge5.com/tag.min.js' data-zone='287797' data-sdk='auto'></script><script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904980',s.src='https://n6wxm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11905293',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11905295',s.src='https://n6wxm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
           sed -i "s|</body>|${MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
 
           if [ -f "icon.png" ]; then
@@ -121,8 +124,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 49
-                  versionName "6.5"
+                  versionCode 50
+                  versionName "7.0"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -222,7 +225,7 @@ jobs:
                   mainWebView.setWebViewClient(new InAppWebClient(false));
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   
-                  // Load securely over https domain so Monetag never falls back to file:// protocol
+                  // Load securely so relative Monetag URLs never trigger file:// ERR_INVALID_URL
                   mainWebView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
 
                   // Bottom margin for the banner
@@ -320,7 +323,7 @@ jobs:
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
-                      // Fix any stray file:// attempts
+                      // Fix any accidental file:// relative path resolution
                       if (url.startsWith("file://") && !url.contains("android_asset")) {
                           view.loadUrl(url.replace("file://", "https://"));
                           return true;
@@ -340,7 +343,7 @@ jobs:
                           return true;
                       }
 
-                      // Keep ad navigation strictly inside the container
+                      // Keep ad navigation inside the app container
                       if (url.startsWith("http://") || url.startsWith("https://")) {
                           view.loadUrl(url);
                           return true;
