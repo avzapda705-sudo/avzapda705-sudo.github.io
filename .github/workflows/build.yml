@@ -121,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 54
-                  versionName "7.0"
+                  versionCode 55
+                  versionName "7.1"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -185,6 +185,7 @@ jobs:
           import android.view.Gravity;
           import android.view.View;
           import android.view.Window;
+          import android.view.WindowManager;
           import android.webkit.JavascriptInterface;
           import android.webkit.SslErrorHandler;
           import android.webkit.WebChromeClient;
@@ -205,15 +206,22 @@ jobs:
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  // Main container stacked vertically: Top Ad -> Web Content -> Bottom Ad
+                  // Calculate Status Bar Height so Top Banner is never pushed off-screen
+                  int statusBarHeight = 0;
+                  int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+                  if (resourceId > 0) {
+                      statusBarHeight = getResources().getDimensionPixelSize(resourceId);
+                  }
+
                   LinearLayout root = new LinearLayout(this);
                   root.setOrientation(LinearLayout.VERTICAL);
                   root.setBackgroundColor(Color.parseColor("#050b1e"));
+                  root.setPadding(0, statusBarHeight, 0, 0);
 
-                  int topHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 44, getResources().getDisplayMetrics());
+                  int topHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 46, getResources().getDisplayMetrics());
                   int bottomHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 50, getResources().getDisplayMetrics());
 
-                  // 1. TOP BANNER AD
+                  // 1. TOP BANNER AD (Placed right below Status Bar)
                   LinearLayout topBanner = new LinearLayout(this);
                   topBanner.setBackgroundColor(Color.parseColor("#1E1B4B"));
                   topBanner.setGravity(Gravity.CENTER_VERTICAL);
@@ -247,7 +255,7 @@ jobs:
 
                   root.addView(topBanner, new LinearLayout.LayoutParams(-1, topHeight));
 
-                  // 2. MAIN WEBVIEW (Fills remaining space cleanly so bottom nav buttons are visible)
+                  // 2. MAIN WEBVIEW (In the middle)
                   mainWebView = new WebView(this);
                   setupWeb(mainWebView);
                   mainWebView.setWebViewClient(new InAppWebClient());
@@ -257,7 +265,7 @@ jobs:
                   LinearLayout.LayoutParams webParams = new LinearLayout.LayoutParams(-1, 0, 1.0f);
                   root.addView(mainWebView, webParams);
 
-                  // 3. BOTTOM BANNER AD
+                  // 3. BOTTOM BANNER AD (Right at the bottom)
                   LinearLayout banner = new LinearLayout(this);
                   banner.setBackgroundColor(Color.parseColor("#111827"));
                   banner.setGravity(Gravity.CENTER_VERTICAL);
