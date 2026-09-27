@@ -45,7 +45,7 @@ jobs:
             cp sw.js app/src/main/assets/sw.js
           fi
 
-          # Fix index.html so Spin directly spins without opening video dialog
+          # Direct spin to avoid repetitive video popups on wheel
           sed -i 's/triggerAdMob(\x27spin\x27);/doSpin();/g' app/src/main/assets/index.html
 
           # Inject all Monetag zones (MultiTag, Push, OnClick, Vignette)
@@ -127,8 +127,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 51
-                  versionName "7.1"
+                  versionCode 52
+                  versionName "7.2"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -193,6 +193,7 @@ jobs:
           import android.view.Gravity;
           import android.view.View;
           import android.view.Window;
+          import android.webkit.CookieManager;
           import android.webkit.JavascriptInterface;
           import android.webkit.SslErrorHandler;
           import android.webkit.WebChromeClient;
@@ -206,6 +207,7 @@ jobs:
           import android.widget.LinearLayout;
           import android.widget.TextView;
           import androidx.webkit.WebViewAssetLoader;
+          import java.util.Random;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
@@ -213,6 +215,7 @@ jobs:
               private WebView adWebView;
               private WebViewAssetLoader assetLoader;
               private static final String BASE_AD_URL = "https://omg10.com/4/11903025";
+              private final Random random = new Random();
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
@@ -284,7 +287,7 @@ jobs:
                   s.setSupportMultipleWindows(true);
                   s.setJavaScriptCanOpenWindowsAutomatically(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-                  s.setUserAgentString("Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36");
+                  s.setUserAgentString("Mozilla/5.0 (Linux; Android 13; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.88 Mobile Safari/537.36");
 
                   wv.setWebChromeClient(new WebChromeClient() {
                       @Override
@@ -397,9 +400,17 @@ jobs:
                   setupWeb(adWebView, true);
                   adWebView.setWebViewClient(new InAppWebClient(true));
 
-                  // Fresh ad session URL with dynamic timestamp to rotate campaigns
-                  String freshAdUrl = BASE_AD_URL + "?sub=" + System.currentTimeMillis();
+                  // Clear previous ad session cache/cookies completely so fresh campaigns load
+                  adWebView.clearCache(true);
+                  adWebView.clearHistory();
+                  CookieManager.getInstance().removeAllCookies(null);
+                  CookieManager.getInstance().flush();
+
+                  // Rotate ad queries using unique parameters to prevent YouTube cache pinning
+                  long randSeed = System.currentTimeMillis() + random.nextInt(99999);
+                  String freshAdUrl = BASE_AD_URL + "?subid=" + randSeed + "&ymid=" + randSeed;
                   adWebView.loadUrl(freshAdUrl);
+
                   l.addView(adWebView, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
                   adDialog.setContentView(l);
