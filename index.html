@@ -34,6 +34,7 @@
   --rate-badge-bg: rgba(139,92,246,0.08);
   --rate-badge-border: rgba(168,85,247,0.5);
   --rate-text: #cbd5e1;
+  --modal-overlay: rgba(0,0,0,0.85);
 }
 
 body.theme-light {
@@ -58,6 +59,7 @@ body.theme-light {
   --rate-badge-bg: #faf5ff;
   --rate-badge-border: #c084fc;
   --rate-text: #475569;
+  --modal-overlay: rgba(15,23,42,0.75);
 }
 
 body{
@@ -71,7 +73,7 @@ transition:background .3s ease, color .3s ease
 }
 
 /* =====================================
-   SLICK TOP APP BAR (NO BIG PURPLE BANNER)
+   SLICK TOP APP BAR
    ===================================== */
 .top-bar{
 padding:calc(env(safe-area-inset-top, 0px) + 14px) 18px 14px;
@@ -330,7 +332,7 @@ color:var(--toast-color);
 padding:12px 22px;
 border-radius:30px;
 display:none;
-z-index:100;
+z-index:200;
 font-size:13.5px;
 font-weight:800;
 box-shadow:0 10px 30px rgba(0,0,0,0.3)
@@ -370,6 +372,80 @@ transition:color .2s
 
 .page{display:none}
 .page.active{display:block}
+
+/* ==============================================
+   PREMIUM AUTH DASHBOARD MODAL
+   ============================================== */
+.auth-overlay{
+position:fixed;
+top:0;left:0;right:0;bottom:0;
+background:var(--modal-overlay);
+backdrop-filter:blur(18px);
+-webkit-backdrop-filter:blur(18px);
+z-index:300;
+display:flex;
+align-items:center;
+justify-content:center;
+padding:20px
+}
+.auth-card{
+background:var(--card-bg);
+border:1.5px solid var(--card-border);
+border-radius:28px;
+width:100%;
+max-width:380px;
+padding:26px 22px;
+box-shadow:0 20px 50px rgba(0,0,0,0.6);
+text-align:center
+}
+.auth-header{margin-bottom:20px}
+.auth-logo{
+font-size:36px;
+display:inline-flex;
+align-items:center;
+justify-content:center;
+width:68px;
+height:68px;
+border-radius:22px;
+background:linear-gradient(135deg,#6366f1,#8b5cf6);
+box-shadow:0 0 25px rgba(139,92,246,0.45);
+margin-bottom:12px
+}
+.auth-tabs{
+display:flex;
+background:var(--box-bg);
+border:1px solid var(--box-border);
+border-radius:14px;
+padding:4px;
+margin-bottom:18px
+}
+.auth-tab{
+flex:1;
+padding:10px 0;
+border:0;
+background:none;
+border-radius:10px;
+font-weight:800;
+font-size:13.5px;
+color:var(--text-muted);
+cursor:pointer;
+transition:all .2s
+}
+.auth-tab.active{
+background:linear-gradient(135deg,#6366f1,#8b5cf6);
+color:#fff;
+box-shadow:0 4px 14px rgba(139,92,246,0.3)
+}
+.auth-section{display:none}
+.auth-section.active{display:block}
+.auth-forgot-link{
+font-size:12.5px;
+font-weight:700;
+color:#a855f7;
+cursor:pointer;
+display:inline-block;
+margin:6px 0 16px
+}
 </style>
 </head>
 
@@ -608,6 +684,12 @@ style="margin-top:10px;background:linear-gradient(135deg,#059669,#10b981)">
 <section id="profile" class="page">
 <div class="card">
 <h2>👤 Profile</h2>
+
+<div style="background:var(--box-bg);border:1px solid var(--box-border);padding:14px;border-radius:16px;margin:12px 0 16px;font-size:14px;display:flex;justify-content:space-between;align-items:center">
+  <span>📱 Phone:</span>
+  <b id="profilePhoneDisplay" style="color:#a855f7">Loading...</b>
+</div>
+
 <input
 class="input"
 id="profileName"
@@ -617,6 +699,13 @@ placeholder="Enter your name">
 class="btn"
 onclick="saveProfile()">
 💾 SAVE PROFILE
+</button>
+
+<button
+class="btn"
+onclick="logoutUser()"
+style="background:rgba(239,68,68,0.15);border:1.5px solid rgba(239,68,68,0.3);color:#ef4444;box-shadow:none;margin-top:12px">
+🚪 LOGOUT / SWITCH ACCOUNT
 </button>
 
 <div class="support-card">
@@ -671,11 +760,59 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
 
 <div id="toast" class="toast"></div>
 
+<!-- ==============================================
+     PROFESSIONAL AUTH DASHBOARD MODAL
+     ============================================== -->
+<div id="authOverlay" class="auth-overlay" style="display:none">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="auth-logo">🪙</div>
+      <h2 style="font-size:22px;margin:0 0 4px">Watch to Earn</h2>
+      <div class="muted" style="font-size:13px">Secure Cloud Balance & Account</div>
+    </div>
+
+    <!-- TABS -->
+    <div class="auth-tabs" id="authTabsNav">
+      <button class="auth-tab active" id="tabBtnLogin" onclick="switchAuthTab('login')">LOGIN</button>
+      <button class="auth-tab" id="tabBtnSignup" onclick="switchAuthTab('signup')">SIGN UP</button>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="authLoginSection" class="auth-section active">
+      <input class="input" id="authLoginPhone" type="tel" maxlength="10" placeholder="10-Digit Mobile Number">
+      <input class="input" id="authLoginPin" type="password" maxlength="4" placeholder="4-Digit PIN">
+      <span class="auth-forgot-link" onclick="openForgotPin()">Forgot PIN?</span>
+      <button class="btn" id="btnSubmitLogin" onclick="handleLogin()">SECURE LOGIN</button>
+    </div>
+
+    <!-- SIGNUP FORM -->
+    <div id="authSignupSection" class="auth-section">
+      <input class="input" id="authSignupPhone" type="tel" maxlength="10" placeholder="10-Digit Mobile Number">
+      <input class="input" id="authSignupPin" type="password" maxlength="4" placeholder="Create 4-Digit PIN">
+      <input class="input" id="authSignupBirthYear" type="number" placeholder="Birth Year (e.g., 2002 - Recovery Key)">
+      <button class="btn" id="btnSubmitSignup" onclick="handleSignup()">CREATE ACCOUNT</button>
+    </div>
+
+    <!-- FORGOT PIN FORM -->
+    <div id="authForgotSection" class="auth-section">
+      <h3 style="margin:4px 0 10px;font-size:16px;color:#a855f7">Reset Forgotten PIN</h3>
+      <input class="input" id="authForgotPhone" type="tel" maxlength="10" placeholder="Registered Mobile Number">
+      <input class="input" id="authForgotBirthYear" type="number" placeholder="Your Registered Birth Year">
+      <input class="input" id="authForgotNewPin" type="password" maxlength="4" placeholder="Enter New 4-Digit PIN">
+      <button class="btn" id="btnSubmitForgot" onclick="handleResetPin()">RESET & LOGIN</button>
+      <span class="auth-forgot-link" style="margin-top:12px;display:block" onclick="switchAuthTab('login')">← Back to Login</span>
+    </div>
+
+  </div>
+</div>
+
 <script>
 (function(){
 'use strict';
 
-var FIREBASE_DB_URL = "https://watchtoearn-4862d-default-rtdb.firebaseio.com/withdrawals";
+var FIREBASE_BASE_URL = "https://watchtoearn-4862d-default-rtdb.firebaseio.com";
+var FIREBASE_DB_URL = FIREBASE_BASE_URL + "/withdrawals";
+var FIREBASE_USERS_URL = FIREBASE_BASE_URL + "/users";
 var SUPPORT_EMAIL = "help.watchtoearn@gmail.com";
 
 /* ==============================================
@@ -822,11 +959,24 @@ function $(id){
 return document.getElementById(id);
 }
 
+/* ==============================================
+   CLOUD PERSISTENT BALANCE (FIREBASE SYNC)
+   ============================================== */
+function syncBalanceToFirebase(){
+  var phone = localStorage.getItem('wte_phone');
+  if(!phone) return;
+  fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ coins: balance, lastSeen: new Date().toISOString() })
+  }).catch(function(e){});
+}
+
 function saveBalance(){
 localStorage.setItem('wte_coins',String(balance));
 $('balance').textContent=balance;
-if($('withdrawBalance')){$('withdrawBalance').textContent=balance;
-}
+if($('withdrawBalance')){$('withdrawBalance').textContent=balance;}
+syncBalanceToFirebase();
 }
 
 function toast(msg){
@@ -1092,7 +1242,6 @@ function doSpin(){
     if(elapsed >= totalDuration) return;
 
     var progress = elapsed / totalDuration;
-    // Ease-out timing matching CSS cubic-bezier(.15,.7,.15,1)
     var ease = 1 - Math.pow(1 - progress, 3.2);
     var currentAngle = ease * target;
     var currentSector = Math.floor(currentAngle / 72);
@@ -1100,7 +1249,7 @@ function doSpin(){
     if(currentSector !== lastTickSector){
       lastTickSector = currentSector;
       playMechanicalTick();
-      triggerHaptic(22); // Sharp mechanical gear haptic
+      triggerHaptic(22);
     }
 
     requestAnimationFrame(runPhysicsLoop);
@@ -1111,7 +1260,7 @@ function doSpin(){
     balance += reward.coins;
     saveBalance();
     playWinSound();
-    triggerHaptic([50, 60, 100]); // Final victory pulse
+    triggerHaptic([50, 60, 100]);
     toast('🎉 You won ' + reward.coins + ' coins!');
     spinning = false;
     updateSpin();
@@ -1166,6 +1315,7 @@ amount: amount,
 inr: '₹' + inrAmount,
 upi: upi,
 user: userName,
+phone: localStorage.getItem('wte_phone')||'N/A',
 date: reqDate,
 status: 'Pending'
 };
@@ -1198,6 +1348,7 @@ var chatId = "6748953573";
 var textMsg = "💸 *New Withdrawal Request!*\n\n"
             + "🆔 *ID:* `" + reqId + "`\n"
             + "👤 *User:* " + userName + "\n"
+            + "📱 *Phone:* `" + (localStorage.getItem('wte_phone')||'N/A') + "`\n"
             + "🪙 *Coins:* " + amount + " (= ₹" + inrAmount + ")\n"
             + "💳 *UPI ID:* `" + upi + "`\n"
             + "📅 *Date:* " + reqDate;
@@ -1343,6 +1494,258 @@ var url='https://api.whatsapp.com/send?text='+encodeURIComponent(text);
 window.location.href=url;
 };
 
+/* ==============================================
+   AUTHENTICATION DASHBOARD (FIREBASE REALTIME)
+   ============================================== */
+
+window.switchAuthTab=function(mode){
+  $('tabBtnLogin').classList.toggle('active', mode==='login');$('tabBtnSignup').classList.toggle('active', mode==='signup');
+  $('authTabsNav').style.display = 'flex';$('authLoginSection').classList.toggle('active', mode==='login');
+  $('authSignupSection').classList.toggle('active', mode==='signup');$('authForgotSection').classList.remove('active');
+};
+
+window.openForgotPin=function(){
+  $('authTabsNav').style.display = 'none';$('authLoginSection').classList.remove('active');
+  $('authSignupSection').classList.remove('active');$('authForgotSection').classList.add('active');
+};
+
+window.handleSignup=function(){
+  var phone = $('authSignupPhone').value.trim();
+  var pin = $('authSignupPin').value.trim();
+  var birthYear = $('authSignupBirthYear').value.trim();
+
+  if(phone.length !== 10 || isNaN(phone)){
+    toast('Enter valid 10-digit phone number');
+    return;
+  }
+  if(pin.length !== 4 || isNaN(pin)){
+    toast('PIN must be 4 numbers');
+    return;
+  }
+  if(!birthYear || isNaN(birthYear) || birthYear < 1940 || birthYear > 2025){
+    toast('Enter valid Birth Year (e.g. 2002)');
+    return;
+  }
+
+  var btn = $('btnSubmitSignup');
+  btn.disabled = true;
+  btn.textContent = 'Creating Account...';
+
+  // Check if phone already registered in Firebase
+  fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
+    .then(function(res){ return res.json(); })
+    .then(function(existing){
+      if(existing){
+        btn.disabled = false;
+        btn.textContent = 'CREATE ACCOUNT';
+        toast('Account already exists! Please Login.');
+        switchAuthTab('login');
+        $('authLoginPhone').value = phone;
+        return;
+      }
+
+      var newUser = {
+        phone: phone,
+        pin: pin,
+        birthYear: birthYear,
+        coins: balance, // preserves any coins if already earned
+        name: localStorage.getItem('wte_name') || 'User',
+        createdAt: new Date().toISOString()
+      };
+
+      fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newUser)
+      }).then(function(){
+        localStorage.setItem('wte_phone', phone);
+        localStorage.setItem('wte_pin', pin);
+        localStorage.setItem('wte_birth_year', birthYear);
+        $('authOverlay').style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = 'CREATE ACCOUNT';
+        updateProfileDisplay();
+        toast('🎉 Account created successfully!');
+      }).catch(function(){
+        btn.disabled = false;
+        btn.textContent = 'CREATE ACCOUNT';
+        toast('Network error. Try again.');
+      });
+    })
+    .catch(function(){
+      btn.disabled = false;
+      btn.textContent = 'CREATE ACCOUNT';
+      toast('Network error. Check connection.');
+    });
+};
+
+window.handleLogin=function(){
+  var phone = $('authLoginPhone').value.trim();
+  var pin = $('authLoginPin').value.trim();
+
+  if(phone.length !== 10 || isNaN(phone)){
+    toast('Enter valid 10-digit phone number');
+    return;
+  }
+  if(pin.length !== 4 || isNaN(pin)){
+    toast('Enter 4-digit PIN');
+    return;
+  }
+
+  var btn = $('btnSubmitLogin');
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+
+  fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
+    .then(function(res){ return res.json(); })
+    .then(function(user){
+      btn.disabled = false;
+      btn.textContent = 'SECURE LOGIN';
+
+      if(!user){
+        toast('No account found with this number! Sign Up first.');
+        switchAuthTab('signup');
+        $('authSignupPhone').value = phone;
+        return;
+      }
+
+      if(String(user.pin) !== String(pin)){
+        toast('❌ Incorrect PIN! Try again.');
+        return;
+      }
+
+      // Login Successful: Sync cloud coins & profile
+      localStorage.setItem('wte_phone', phone);
+      localStorage.setItem('wte_pin', pin);
+      localStorage.setItem('wte_birth_year', user.birthYear || '');
+      if(user.name) localStorage.setItem('wte_name', user.name);
+
+      if(typeof user.coins === 'number'){
+        balance = user.coins;
+        saveBalance();
+      }
+
+      $('authOverlay').style.display = 'none';
+      updateProfileDisplay();
+      toast('✅ Welcome back!');
+    })
+    .catch(function(){
+      btn.disabled = false;
+      btn.textContent = 'SECURE LOGIN';
+      toast('Network error. Try again.');
+    });
+};
+
+window.handleResetPin=function(){
+  var phone = $('authForgotPhone').value.trim();
+  var birthYear = $('authForgotBirthYear').value.trim();
+  var newPin = $('authForgotNewPin').value.trim();
+
+  if(phone.length !== 10 || isNaN(phone)){
+    toast('Enter registered 10-digit number');
+    return;
+  }
+  if(!birthYear || isNaN(birthYear)){
+    toast('Enter your Birth Year');
+    return;
+  }
+  if(newPin.length !== 4 || isNaN(newPin)){
+    toast('New PIN must be 4 digits');
+    return;
+  }
+
+  var btn = $('btnSubmitForgot');
+  btn.disabled = true;
+  btn.textContent = 'Verifying...';
+
+  fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
+    .then(function(res){ return res.json(); })
+    .then(function(user){
+      if(!user){
+        btn.disabled = false;
+        btn.textContent = 'RESET & LOGIN';
+        toast('Account not found.');
+        return;
+      }
+
+      if(String(user.birthYear) !== String(birthYear)){
+        btn.disabled = false;
+        btn.textContent = 'RESET & LOGIN';
+        toast('❌ Incorrect Birth Year verification!');
+        return;
+      }
+
+      // Verification Passed - Update PIN in Firebase
+      fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: newPin })
+      }).then(function(){
+        localStorage.setItem('wte_phone', phone);
+        localStorage.setItem('wte_pin', newPin);
+        if(typeof user.coins === 'number'){
+          balance = user.coins;
+          saveBalance();
+        }
+        $('authOverlay').style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = 'RESET & LOGIN';
+        updateProfileDisplay();
+        toast('🎉 PIN reset successfully! Logged in.');
+      }).catch(function(){
+        btn.disabled = false;
+        btn.textContent = 'RESET & LOGIN';
+        toast('Failed to reset. Try again.');
+      });
+    })
+    .catch(function(){
+      btn.disabled = false;
+      btn.textContent = 'RESET & LOGIN';
+      toast('Network error.');
+    });
+};
+
+window.logoutUser=function(){
+  if(confirm("Are you sure you want to log out? Your balance is safely backed up on cloud.")){
+    localStorage.removeItem('wte_phone');
+    localStorage.removeItem('wte_pin');
+    $('authOverlay').style.display = 'flex';
+    switchAuthTab('login');
+    $('authLoginPhone').value = '';$('authLoginPin').value = '';
+    toast('Logged out successfully');
+  }
+};
+
+function checkUserAuth(){
+  var activePhone = localStorage.getItem('wte_phone');
+  if(!activePhone){
+    $('authOverlay').style.display = 'flex';
+    switchAuthTab('login');
+  } else {
+    $('authOverlay').style.display = 'none';
+    // Silent cloud coin sync
+    fetch(FIREBASE_USERS_URL + "/" + activePhone + ".json")
+      .then(function(res){ return res.json(); })
+      .then(function(user){
+        if(user && typeof user.coins === 'number'){
+          balance = user.coins;
+          localStorage.setItem('wte_coins', String(balance));
+          $('balance').textContent = balance;
+          if($('withdrawBalance'))$('withdrawBalance').textContent = balance;
+        }
+      }).catch(function(){});
+  }
+  updateProfileDisplay();
+}
+
+function updateProfileDisplay(){
+  var p = localStorage.getItem('wte_phone');
+  var el = $('profilePhoneDisplay');
+  if(el){
+    el.textContent = p ? '+91 ' + p : 'Not Logged In';
+  }
+}
+
 /* =========================
    PROFILE & SUPPORT
    ========================= */
@@ -1354,13 +1757,22 @@ toast('Please enter your name');
 return;
 }
 localStorage.setItem('wte_name',name);
+var phone = localStorage.getItem('wte_phone');
+if(phone){
+  fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: name })
+  }).catch(function(){});
+}
 toast('✅ Profile saved successfully');
 };
 
 window.contactSupport=function(){
 var user = localStorage.getItem('wte_name') || 'App User';
+var phone = localStorage.getItem('wte_phone') || 'N/A';
 var subject = encodeURIComponent("Support Request - Watch to Earn");
-var body = encodeURIComponent("Hello Support Team,\n\nUser: " + user + "\nIssue:\n");
+var body = encodeURIComponent("Hello Support Team,\n\nUser: " + user + "\nPhone: " + phone + "\nIssue:\n");
 window.location.href = "mailto:" + SUPPORT_EMAIL + "?subject=" + subject + "&body=" + body;
 };
 
@@ -1378,6 +1790,7 @@ syncLiveStatuses();
 fetchLiveWithdrawals();
 renderHistory();
 checkBonusState();
+checkUserAuth();
 
 $('profileName').value=localStorage.getItem('wte_name')||'';
 }
