@@ -232,15 +232,17 @@ transition:border-color .2s
   40%,80%{transform:translateX(6px)}
 }
 
-/* PASSWORD WRAPPER WITH EYE TOGGLE */
+/* ROBUST PASSWORD WRAPPER WITH EYE TOGGLE */
 .pin-input-group{
 position:relative;
 width:100%;
-margin:10px 0 14px
+margin:10px 0 14px;
+display:flex;
+align-items:center
 }
 .pin-input-group .input{
 margin:0;
-padding-right:48px
+padding-right:52px
 }
 .eye-btn{
 position:absolute;
@@ -249,14 +251,17 @@ top:50%;
 transform:translateY(-50%);
 background:none;
 border:none;
-font-size:18px;
 cursor:pointer;
-padding:4px;
-line-height:1;
-opacity:0.65;
-transition:opacity .2s
+padding:6px;
+line-height:0;
+display:flex;
+align-items:center;
+justify-content:center;
+color:var(--text-muted);
+transition:color .2s, transform .1s
 }
-.eye-btn:active{opacity:1}
+.eye-btn:active{transform:translateY(-50%) scale(0.9)}
+.eye-btn svg{width:22px;height:22px;fill:currentColor}
 
 .auth-error-msg{
 display:none;
@@ -490,7 +495,9 @@ display:inline-block;
 margin:6px 0 16px
 }
 
-/* CUSTOM LOGOUT DIALOG */
+/* ==============================================
+   MODERN NEON LOGOUT CONFIRMATION DIALOG
+   ============================================== */
 .dialog-overlay{
 position:fixed;
 top:0;left:0;right:0;bottom:0;
@@ -506,29 +513,44 @@ padding:20px
 .dialog-card{
 background:var(--card-bg);
 border:1.5px solid var(--card-border);
-border-radius:24px;
+border-radius:26px;
 width:100%;
 max-width:340px;
-padding:24px 20px;
+padding:26px 20px;
 text-align:center;
 box-shadow:0 20px 50px rgba(0,0,0,0.6)
+}
+.logout-icon-bubble{
+width:64px;
+height:64px;
+margin:0 auto 14px;
+border-radius:50%;
+background:rgba(239,68,68,0.12);
+border:1.5px solid rgba(239,68,68,0.3);
+display:flex;
+align-items:center;
+justify-content:center;
+color:#ef4444;
+box-shadow:0 0 20px rgba(239,68,68,0.2)
 }
 .dialog-actions{
 display:grid;
 grid-template-columns:1fr 1fr;
-gap:10px;
-margin-top:20px
+gap:12px;
+margin-top:22px
 }
 .btn-cancel{
 background:var(--box-bg);
-border:1px solid var(--box-border);
+border:1.5px solid var(--box-border);
 color:var(--text-main);
 padding:14px;
 border-radius:14px;
 font-weight:800;
 font-size:14px;
-cursor:pointer
+cursor:pointer;
+transition:all .15s ease
 }
+.btn-cancel:active{transform:scale(0.97)}
 .btn-logout{
 background:linear-gradient(135deg,#ef4444,#dc2626);
 border:none;
@@ -538,8 +560,10 @@ border-radius:14px;
 font-weight:800;
 font-size:14px;
 cursor:pointer;
-box-shadow:0 6px 20px rgba(239,68,68,0.35)
+box-shadow:0 6px 20px rgba(239,68,68,0.35);
+transition:all .15s ease
 }
+.btn-logout:active{transform:scale(0.97)}
 </style>
 </head>
 
@@ -877,7 +901,9 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
       
       <div class="pin-input-group">
         <input class="input" id="authLoginPin" type="password" maxlength="4" placeholder="4-Digit PIN">
-        <button type="button" class="eye-btn" onclick="togglePinVisibility('authLoginPin', this)">👁️</button>
+        <button type="button" class="eye-btn" onclick="togglePinVisibility('authLoginPin', this)">
+          <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        </button>
       </div>
       <div class="auth-error-msg" id="authLoginError"></div>
 
@@ -891,7 +917,9 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
       
       <div class="pin-input-group">
         <input class="input" id="authSignupPin" type="password" maxlength="4" placeholder="Create 4-Digit PIN">
-        <button type="button" class="eye-btn" onclick="togglePinVisibility('authSignupPin', this)">👁️</button>
+        <button type="button" class="eye-btn" onclick="togglePinVisibility('authSignupPin', this)">
+          <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        </button>
       </div>
 
       <input class="input" id="authSignupBirthYear" type="number" placeholder="Birth Year (e.g., 2002 - Recovery Key)">
@@ -908,7 +936,9 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
       
       <div class="pin-input-group">
         <input class="input" id="authForgotNewPin" type="password" maxlength="4" placeholder="Enter New 4-Digit PIN">
-        <button type="button" class="eye-btn" onclick="togglePinVisibility('authForgotNewPin', this)">👁️</button>
+        <button type="button" class="eye-btn" onclick="togglePinVisibility('authForgotNewPin', this)">
+          <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        </button>
       </div>
       <div class="auth-error-msg" id="authForgotError"></div>
 
@@ -920,11 +950,15 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
 </div>
 
 <!-- ==============================================
-     CUSTOM LOGOUT CONFIRMATION DIALOG
+     MODERN LOGOUT CONFIRMATION DIALOG
      ============================================== -->
 <div id="logoutDialog" class="dialog-overlay" style="display:none">
   <div class="dialog-card">
-    <div style="font-size:38px;margin-bottom:10px">🚪</div>
+    <div class="logout-icon-bubble">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">
+        <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+      </svg>
+    </div>
     <h3 style="margin:0 0 8px;font-size:19px;color:var(--text-main)">Log Out Account?</h3>
     <div class="muted" style="font-size:13px;line-height:1.5">
       Your balance is safely secured in cloud storage. You can log back in anytime using your phone number and PIN.
@@ -1090,17 +1124,20 @@ return document.getElementById(id);
 }
 
 /* ==============================================
-   PASSWORD EYE TOGGLE HELPER
+   PASSWORD EYE TOGGLE HELPER (SVG ICONS)
    ============================================== */
+var SVG_EYE_OPEN = '<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>';
+var SVG_EYE_SLASH = '<svg viewBox="0 0 24 24"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>';
+
 window.togglePinVisibility=function(inputId, btnEl){
   var el = $(inputId);
   if(!el) return;
   if(el.type === 'password'){
     el.type = 'text';
-    btnEl.textContent = '🙈';
+    btnEl.innerHTML = SVG_EYE_SLASH;
   } else {
     el.type = 'password';
-    btnEl.textContent = '👁️';
+    btnEl.innerHTML = SVG_EYE_OPEN;
   }
 };
 
@@ -1120,7 +1157,7 @@ function showAuthError(errElementId, targetInputId, msg){
   var inp = $(targetInputId);
   if(inp){
     inp.classList.remove('input-error');
-    void inp.offsetWidth; // trigger reflow for restart animation
+    void inp.offsetWidth; // restart animation
     inp.classList.add('input-error');
     inp.focus();
   }
@@ -1399,7 +1436,6 @@ function doSpin(){
   rotation += target - (rotation % 360);
   $('wheel').style.transform = 'rotate(' + rotation + 'deg)';
 
-  // Cubic-Bezier Synchronized Spin Physics (4.2 seconds)
   var totalDuration = 4200;
   var startTime = Date.now();
   var lastTickSector = -1;
@@ -1458,7 +1494,6 @@ toast('Insufficient balance');
 return;
 }
 
-/* Smart Multi-Tier Payout: 1,000 Coins = ₹10 (Super Cashout) & Remainder @ 200 Coins = ₹1 */
 var inrAmount;
 if (amount >= 1000) {
   var superUnits = Math.floor(amount / 1000);
@@ -1496,7 +1531,6 @@ $('amount').value='';
 renderHistory();
 toast('Withdrawal request submitted!');
 
-/* Immediately prepend to live ticker strip */
 var masked = maskUpi(upi);
 var ticker = $('liveTickerText');
 if(ticker){
@@ -1702,7 +1736,6 @@ window.handleSignup=function(){
   btn.disabled = true;
   btn.textContent = 'Creating Account...';
 
-  // Check if phone already registered in Firebase
   fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
     .then(function(res){ return res.json(); })
     .then(function(existing){
@@ -1879,7 +1912,7 @@ window.handleResetPin=function(){
 };
 
 /* ==============================================
-   CUSTOM LOGOUT MODAL CONTROLS
+   MODERN LOGOUT MODAL CONTROLS
    ============================================== */
 window.openLogoutDialog=function(){
   $('logoutDialog').style.display = 'flex';
