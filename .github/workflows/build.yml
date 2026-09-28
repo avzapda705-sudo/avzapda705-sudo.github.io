@@ -41,13 +41,6 @@ jobs:
           mkdir -p app/src/main/res/mipmap-anydpi-v26
 
           cp index.html app/src/main/assets/index.html
-          if [ -f "sw.js" ]; then
-            cp sw.js app/src/main/assets/sw.js
-          fi
-
-          # Inject all Monetag zones (MultiTag, Push, OnClick, Vignette)
-          MONETAG_TAGS="<script src='https://quge5.com/tag.min.js' data-zone='287797' data-sdk='auto'></script><script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904980',s.src='https://n6wxm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11905293',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11905295',s.src='https://n6wxm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
-          sed -i "s|</body>|${MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
 
           if [ -f "icon.png" ]; then
             sudo apt-get update && sudo apt-get install -y imagemagick
@@ -124,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 56
-                  versionName "8.1"
+                  versionCode 43
+                  versionName "5.9"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -140,7 +133,7 @@ jobs:
           }
           dependencies {
               implementation "androidx.annotation:annotation:1.9.1"
-              implementation "androidx.webkit:webkit:1.12.1"
+              implementation "androidx.cardview:cardview:1.0.0"
           }
           EOF
 
@@ -176,7 +169,6 @@ jobs:
           cat > app/src/main/java/com/watchtoearn/app/MainActivity.java <<'EOF'
           package com.watchtoearn.app;
 
-          import android.annotation.SuppressLint;
           import android.app.Activity;
           import android.app.Dialog;
           import android.content.Intent;
@@ -185,17 +177,15 @@ jobs:
           import android.net.http.SslError;
           import android.os.Bundle;
           import android.os.CountDownTimer;
-          import android.os.Message;
+          import android.os.Handler;
+          import android.os.Looper;
           import android.util.TypedValue;
           import android.view.Gravity;
           import android.view.View;
           import android.view.Window;
-          import android.webkit.CookieManager;
           import android.webkit.JavascriptInterface;
           import android.webkit.SslErrorHandler;
           import android.webkit.WebChromeClient;
-          import android.webkit.WebResourceRequest;
-          import android.webkit.WebResourceResponse;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
@@ -203,33 +193,25 @@ jobs:
           import android.widget.FrameLayout;
           import android.widget.LinearLayout;
           import android.widget.TextView;
-          import androidx.webkit.WebViewAssetLoader;
-          import java.util.Random;
+          import androidx.cardview.widget.CardView;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
               private Dialog adDialog;
-              private WebView adWebView;
-              private WebViewAssetLoader assetLoader;
-              private static final String BASE_AD_URL = "https://omg10.com/4/11903025";
-              private final Random random = new Random();
+              private CardView floatingCardAd;
+              private static final String AD_URL = "https://omg10.com/4/11903025";
+              private final Handler handler = new Handler(Looper.getMainLooper());
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   FrameLayout root = new FrameLayout(this);
 
-                  assetLoader = new WebViewAssetLoader.Builder()
-                          .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
-                          .build();
-
                   mainWebView = new WebView(this);
-                  setupWeb(mainWebView, false);
-                  mainWebView.setWebViewClient(new InAppWebClient(false));
+                  setupWeb(mainWebView);
+                  mainWebView.setWebViewClient(new SafeWebClient());
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
-                  
-                  // Local secure route (Fixes file:// ERR_INVALID_URL)
-                  mainWebView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+                  mainWebView.loadUrl("file:///android_asset/index.html");
 
                   int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 54, getResources().getDisplayMetrics());
                   FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
@@ -271,80 +253,121 @@ jobs:
                   bp.gravity = Gravity.BOTTOM;
                   root.addView(banner, bp);
 
+                  buildCard(root);
                   setContentView(root);
+
+                  handler.postDelayed(new Runnable() {
+                      @Override
+                      public void run() {
+                          if (!isFinishing() && floatingCardAd != null) {
+                              floatingCardAd.setVisibility(View.VISIBLE);
+                              floatingCardAd.bringToFront();
+                              handler.postDelayed(() -> {
+                                  if (floatingCardAd != null) floatingCardAd.setVisibility(View.GONE);
+                              }, 8000);
+                          }
+                          handler.postDelayed(this, 30000);
+                      }
+                  }, 5000);
               }
 
-              @SuppressLint("SetJavaScriptEnabled")
-              private void setupWeb(WebView wv, boolean isDialogAd) {
+              private void buildCard(FrameLayout root) {
+                  floatingCardAd = new CardView(this);
+                  floatingCardAd.setRadius(24);
+                  floatingCardAd.setCardElevation(24);
+                  floatingCardAd.setCardBackgroundColor(Color.WHITE);
+                  floatingCardAd.setVisibility(View.GONE);
+
+                  LinearLayout cl = new LinearLayout(this);
+                  cl.setGravity(Gravity.CENTER_VERTICAL);
+                  cl.setPadding(20, 16, 20, 16);
+
+                  TextView ic = new TextView(this);
+                  ic.setText("🎁");
+                  ic.setTextSize(22);
+                  cl.addView(ic);
+
+                  LinearLayout tl = new LinearLayout(this);
+                  tl.setOrientation(LinearLayout.VERTICAL);
+                  tl.setPadding(16, 0, 8, 0);
+
+                  TextView h = new TextView(this);
+                  h.setText("Special Bonus Available!");
+                  h.setTextColor(Color.BLACK);
+                  h.setTextSize(14);
+
+                  TextView s = new TextView(this);
+                  s.setText("Tap to view offer & earn coins");
+                  s.setTextColor(Color.GRAY);
+                  s.setTextSize(11);
+
+                  tl.addView(h);
+                  tl.addView(s);
+                  cl.addView(tl, new LinearLayout.LayoutParams(0, -2, 1.0f));
+
+                  TextView close = new TextView(this);
+                  close.setText("✖");
+                  close.setTextSize(18);
+                  close.setTextColor(Color.GRAY);
+                  close.setPadding(12, 12, 12, 12);
+                  close.setOnClickListener(v -> floatingCardAd.setVisibility(View.GONE));
+                  cl.addView(close);
+
+                  cl.setOnClickListener(v -> {
+                      floatingCardAd.setVisibility(View.GONE);
+                      showAd(false);
+                  });
+
+                  floatingCardAd.addView(cl);
+                  FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(-1, -2);
+                  cp.gravity = Gravity.TOP;
+                  int topMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 110, getResources().getDisplayMetrics());
+                  cp.setMargins(24, topMargin, 24, 0);
+                  root.addView(floatingCardAd, cp);
+              }
+
+              private void setupWeb(WebView wv) {
                   WebSettings s = wv.getSettings();
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
                   s.setDatabaseEnabled(true);
                   s.setAllowFileAccess(true);
                   s.setAllowContentAccess(true);
-                  s.setSupportMultipleWindows(true);
-                  s.setJavaScriptCanOpenWindowsAutomatically(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-                  s.setUserAgentString("Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36");
-
-                  wv.setWebChromeClient(new WebChromeClient() {
-                      @Override
-                      public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                          if (!isDialogAd) {
-                              showAd(false);
-                              if (adWebView != null) {
-                                  WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                                  transport.setWebView(adWebView);
-                                  resultMsg.sendToTarget();
-                                  return true;
-                              }
-                          }
-                          return false;
-                      }
-                  });
+                  s.setUserAgentString(s.getUserAgentString() + " MobileApp");
+                  wv.setWebChromeClient(new WebChromeClient());
               }
 
-              private class InAppWebClient extends WebViewClient {
-                  private final boolean isAdView;
-
-                  public InAppWebClient(boolean isAdView) {
-                      this.isAdView = isAdView;
-                  }
-
-                  @Override
-                  public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                      if (!isAdView && assetLoader != null) {
-                          WebResourceResponse response = assetLoader.shouldInterceptRequest(request.getUrl());
-                          if (response != null) return response;
-                      }
-                      return super.shouldInterceptRequest(view, request);
-                  }
-
+              private class SafeWebClient extends WebViewClient {
                   @Override
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
-
-                      if (url.startsWith("file://") && !url.contains("android_asset")) {
-                          view.loadUrl(url.replace("file://", "https://"));
-                          return true;
-                      }
 
                       if (url.startsWith("intent://")) {
                           try {
                               Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                               if (intent != null) {
-                                  String fallback = intent.getStringExtra("browser_fallback_url");
-                                  if (fallback != null) {
-                                      view.loadUrl(fallback);
-                                      return true;
+                                  try {
+                                      startActivity(intent);
+                                  } catch (Exception e) {
+                                      String fallback = intent.getStringExtra("browser_fallback_url");
+                                      if (fallback != null) {
+                                          view.loadUrl(fallback);
+                                      }
                                   }
                               }
                           } catch (Exception ignored) {}
                           return true;
                       }
 
-                      if (url.startsWith("http://") || url.startsWith("https://")) {
-                          view.loadUrl(url);
+                      boolean isExternal = !url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("file://");
+                      boolean isAppRedirect = url.contains("play.google.com/store") || url.contains("youtube.com") || url.contains("youtu.be");
+
+                      if (isExternal || isAppRedirect) {
+                          try {
+                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                              startActivity(intent);
+                          } catch (Exception ignored) {}
                           return true;
                       }
 
@@ -366,8 +389,6 @@ jobs:
 
               private void showAd(boolean reward) {
                   if (isFinishing()) return;
-                  if (adDialog != null && adDialog.isShowing()) return;
-
                   adDialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
                   adDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
                   adDialog.setCancelable(false);
@@ -394,22 +415,11 @@ jobs:
                   tb.addView(cb);
                   l.addView(tb);
 
-                  adWebView = new WebView(this);
-                  setupWeb(adWebView, true);
-                  adWebView.setWebViewClient(new InAppWebClient(true));
-
-                  // Clear session and cookies to fetch fresh offers
-                  adWebView.clearCache(true);
-                  adWebView.clearHistory();
-                  CookieManager.getInstance().removeAllCookies(null);
-                  CookieManager.getInstance().flush();
-
-                  // Dynamic query parameter rotation
-                  long seed = System.currentTimeMillis() + random.nextInt(999999);
-                  String freshAdUrl = BASE_AD_URL + "?sub=" + seed + "&rand=" + seed;
-                  adWebView.loadUrl(freshAdUrl);
-
-                  l.addView(adWebView, new LinearLayout.LayoutParams(-1, 0, 1.0f));
+                  WebView aw = new WebView(this);
+                  setupWeb(aw);
+                  aw.setWebViewClient(new SafeWebClient());
+                  aw.loadUrl(AD_URL);
+                  l.addView(aw, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
                   adDialog.setContentView(l);
                   adDialog.show();
@@ -428,23 +438,19 @@ jobs:
 
                   cb.setOnClickListener(v -> {
                       if (adDialog != null && adDialog.isShowing()) {
-                          if (adWebView != null) {
-                              adWebView.loadUrl("about:blank");
-                              adWebView.destroy();
-                              adWebView = null;
-                          }
+                          aw.loadUrl("about:blank");
                           adDialog.dismiss();
                       }
                       if (reward && mainWebView != null) {
-                          mainWebView.post(() -> mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();} else if(typeof userCoins !== 'undefined'){userCoins+=10; if(typeof updateCoinDisplay==='function'){updateCoinDisplay();}}", null));
+                          mainWebView.post(() -> mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();}", null));
                       }
                   });
               }
 
               @Override
               protected void onDestroy() {
+                  handler.removeCallbacksAndMessages(null);
                   if (adDialog != null && adDialog.isShowing()) adDialog.dismiss();
-                  if (adWebView != null) adWebView.destroy();
                   if (mainWebView != null) mainWebView.destroy();
                   super.onDestroy();
               }
