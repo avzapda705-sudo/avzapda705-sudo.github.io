@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 70
-                  versionName "8.6"
+                  versionCode 71
+                  versionName "8.7"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -197,7 +197,9 @@ jobs:
           import android.widget.LinearLayout;
           import android.widget.TextView;
           import androidx.cardview.widget.CardView;
-          import java.util.Random;
+          import java.util.ArrayList;
+          import java.util.Collections;
+          import java.util.List;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
@@ -207,11 +209,24 @@ jobs:
               private CardView floatingCardAd;
               private static final String AD_URL = "https://omg10.com/4/11903025";
               private final Handler handler = new Handler(Looper.getMainLooper());
-              private final Random random = new Random();
-              private final int[] timerDurations = {20, 25, 30};
+              private final List<Integer> durationPool = new ArrayList<>();
+              private int poolIndex = 0;
               private boolean bannerUserClicked = false;
               private long lastVignetteTrigger = 0;
               private int triggerCount = 0;
+
+              // Balanced random generator for 20s, 25s, 30s
+              private synchronized int getNextDuration() {
+                  if (durationPool.isEmpty() || poolIndex >= durationPool.size()) {
+                      durationPool.clear();
+                      durationPool.add(20);
+                      durationPool.add(25);
+                      durationPool.add(30);
+                      Collections.shuffle(durationPool);
+                      poolIndex = 0;
+                  }
+                  return durationPool.get(poolIndex++);
+              }
 
               @SuppressLint("ClickableViewAccessibility")
               @Override
@@ -231,7 +246,7 @@ jobs:
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
-                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 64, getResources().getDisplayMetrics());
+                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPUNIT_DIP, 64, getResources().getDisplayMetrics());
                   FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
@@ -288,16 +303,16 @@ jobs:
                   // Preload video ad immediately in background
                   preloadVideoAd();
 
-                  // 30-Second Banner Auto-Refresh Loop (Clean reload without cache clearing)
+                  // 45-Second Banner Auto-Refresh Loop (Stable & smooth)
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
                           if (!isFinishing() && bannerWebView != null) {
                               bannerWebView.reload();
                           }
-                          handler.postDelayed(this, 30000);
+                          handler.postDelayed(this, 45000);
                       }
-                  }, 30000);
+                  }, 45000);
 
                   // Floating Bonus Card Loop (Only after user logs in)
                   handler.postDelayed(new Runnable() {
@@ -555,8 +570,8 @@ jobs:
                   tb.setBackgroundColor(Color.parseColor("#1F2937"));
                   tb.setPadding(horPad, topPad, horPad, botPad);
 
-                  // Randomly pick 20, 25, or 30 seconds for optimal CPM & retention
-                  final int durationSeconds = timerDurations[random.nextInt(timerDurations.length)];
+                  // Balanced automatic 20s, 25s, 30s selection
+                  final int durationSeconds = getNextDuration();
                   long durationMillis = durationSeconds * 1000L;
 
                   TextView tt = new TextView(this);
