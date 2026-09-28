@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 72
-                  versionName "10.2"
+                  versionCode 44
+                  versionName "6.0"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -169,7 +169,6 @@ jobs:
           cat > app/src/main/java/com/watchtoearn/app/MainActivity.java <<'EOF'
           package com.watchtoearn.app;
 
-          import android.annotation.SuppressLint;
           import android.app.Activity;
           import android.app.Dialog;
           import android.content.Intent;
@@ -178,6 +177,8 @@ jobs:
           import android.net.http.SslError;
           import android.os.Bundle;
           import android.os.CountDownTimer;
+          import android.os.Handler;
+          import android.os.Looper;
           import android.util.TypedValue;
           import android.view.Gravity;
           import android.view.View;
@@ -192,48 +193,115 @@ jobs:
           import android.widget.FrameLayout;
           import android.widget.LinearLayout;
           import android.widget.TextView;
-          import java.util.Random;
+          import androidx.cardview.widget.CardView;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
               private WebView bannerWebView;
               private Dialog adDialog;
+              private CardView floatingCardAd;
               private static final String AD_URL = "https://omg10.com/4/11903025";
-              private final Random random = new Random();
+              private final Handler handler = new Handler(Looper.getMainLooper());
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   FrameLayout root = new FrameLayout(this);
 
-                  // 1. Main Application WebView
                   mainWebView = new WebView(this);
                   setupWeb(mainWebView);
-                  mainWebView.setWebViewClient(new SafeWebClient(false, false));
+                  mainWebView.setWebViewClient(new SafeWebClient(false));
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
-                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 60, getResources().getDisplayMetrics());
+                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 54, getResources().getDisplayMetrics());
                   FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
 
-                  // 2. Bottom Real Banner WebView (Monetag Real Live Ads)
+                  // Real Monetag Live Banner Strip
                   bannerWebView = new WebView(this);
                   setupWeb(bannerWebView);
-                  bannerWebView.setWebViewClient(new SafeWebClient(false, true));
-                  
-                  long seed = System.currentTimeMillis() + random.nextInt(9999);
-                  bannerWebView.loadUrl(AD_URL + "?sub=banner_" + seed);
+                  bannerWebView.setWebViewClient(new SafeWebClient(true));
+                  bannerWebView.loadUrl(AD_URL);
 
                   FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
                   bp.gravity = Gravity.BOTTOM;
                   root.addView(bannerWebView, bp);
 
+                  buildCard(root);
                   setContentView(root);
+
+                  handler.postDelayed(new Runnable() {
+                      @Override
+                      public void run() {
+                          if (!isFinishing() && floatingCardAd != null) {
+                              floatingCardAd.setVisibility(View.VISIBLE);
+                              floatingCardAd.bringToFront();
+                              handler.postDelayed(() -> {
+                                  if (floatingCardAd != null) floatingCardAd.setVisibility(View.GONE);
+                              }, 8000);
+                          }
+                          handler.postDelayed(this, 30000);
+                      }
+                  }, 5000);
               }
 
-              @SuppressLint("SetJavaScriptEnabled")
+              private void buildCard(FrameLayout root) {
+                  floatingCardAd = new CardView(this);
+                  floatingCardAd.setRadius(24);
+                  floatingCardAd.setCardElevation(24);
+                  floatingCardAd.setCardBackgroundColor(Color.WHITE);
+                  floatingCardAd.setVisibility(View.GONE);
+
+                  LinearLayout cl = new LinearLayout(this);
+                  cl.setGravity(Gravity.CENTER_VERTICAL);
+                  cl.setPadding(20, 16, 20, 16);
+
+                  TextView ic = new TextView(this);
+                  ic.setText("🎁");
+                  ic.setTextSize(22);
+                  cl.addView(ic);
+
+                  LinearLayout tl = new LinearLayout(this);
+                  tl.setOrientation(LinearLayout.VERTICAL);
+                  tl.setPadding(16, 0, 8, 0);
+
+                  TextView h = new TextView(this);
+                  h.setText("Special Bonus Available!");
+                  h.setTextColor(Color.BLACK);
+                  h.setTextSize(14);
+
+                  TextView s = new TextView(this);
+                  s.setText("Tap to view offer & earn coins");
+                  s.setTextColor(Color.GRAY);
+                  s.setTextSize(11);
+
+                  tl.addView(h);
+                  tl.addView(s);
+                  cl.addView(tl, new LinearLayout.LayoutParams(0, -2, 1.0f));
+
+                  TextView close = new TextView(this);
+                  close.setText("✖");
+                  close.setTextSize(18);
+                  close.setTextColor(Color.GRAY);
+                  close.setPadding(12, 12, 12, 12);
+                  close.setOnClickListener(v -> floatingCardAd.setVisibility(View.GONE));
+                  cl.addView(close);
+
+                  cl.setOnClickListener(v -> {
+                      floatingCardAd.setVisibility(View.GONE);
+                      showAd(false);
+                  });
+
+                  floatingCardAd.addView(cl);
+                  FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(-1, -2);
+                  cp.gravity = Gravity.TOP;
+                  int topMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 110, getResources().getDisplayMetrics());
+                  cp.setMargins(24, topMargin, 24, 0);
+                  root.addView(floatingCardAd, cp);
+              }
+
               private void setupWeb(WebView wv) {
                   WebSettings s = wv.getSettings();
                   s.setJavaScriptEnabled(true);
@@ -242,16 +310,14 @@ jobs:
                   s.setAllowFileAccess(true);
                   s.setAllowContentAccess(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-                  s.setUserAgentString("Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36");
+                  s.setUserAgentString(s.getUserAgentString() + " MobileApp");
                   wv.setWebChromeClient(new WebChromeClient());
               }
 
               private class SafeWebClient extends WebViewClient {
-                  private final boolean isAdDialog;
                   private final boolean isBanner;
 
-                  public SafeWebClient(boolean isAdDialog, boolean isBanner) {
-                      this.isAdDialog = isAdDialog;
+                  public SafeWebClient(boolean isBanner) {
                       this.isBanner = isBanner;
                   }
 
@@ -259,36 +325,26 @@ jobs:
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
-                      // Block YouTube redirect loop strictly everywhere
-                      if (url.contains("youtube.com") || url.contains("youtu.be")) {
-                          if (isAdDialog) {
-                              long seed = System.currentTimeMillis() + random.nextInt(99999);
-                              view.loadUrl(AD_URL + "?sub=retry_" + seed);
-                          } else if (isBanner) {
-                              long seed = System.currentTimeMillis() + random.nextInt(9999);
-                              view.loadUrl(AD_URL + "?sub=banner_retry_" + seed);
-                          }
-                          return true;
-                      }
-
-                      // If banner ad is tapped by user, open destination smoothly in phone browser
-                      if (isBanner && (url.startsWith("http://") || url.startsWith("https://"))) {
-                          if (!url.contains("omg10.com")) {
-                              try {
-                                  Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                                  startActivity(intent);
-                                  return true;
-                              } catch (Exception ignored) {}
-                          }
+                      // Open clicked banner ads cleanly in system browser
+                      if (isBanner && !url.contains("omg10.com") && (url.startsWith("http://") || url.startsWith("https://"))) {
+                          try {
+                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                              startActivity(intent);
+                              return true;
+                          } catch (Exception ignored) {}
                       }
 
                       if (url.startsWith("intent://")) {
                           try {
                               Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                               if (intent != null) {
-                                  String fallback = intent.getStringExtra("browser_fallback_url");
-                                  if (fallback != null && !fallback.contains("youtube.com") && !fallback.contains("youtu.be")) {
-                                      view.loadUrl(fallback);
+                                  try {
+                                      startActivity(intent);
+                                  } catch (Exception e) {
+                                      String fallback = intent.getStringExtra("browser_fallback_url");
+                                      if (fallback != null) {
+                                          view.loadUrl(fallback);
+                                      }
                                   }
                               }
                           } catch (Exception ignored) {}
@@ -296,9 +352,15 @@ jobs:
                       }
 
                       boolean isExternal = !url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("file://");
-                      if (isExternal) {
+                      boolean isAppRedirect = url.contains("play.google.com/store") || url.contains("youtube.com") || url.contains("youtu.be");
+
+                      if (isExternal || isAppRedirect) {
+                          try {
+                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                              startActivity(intent);
+                          } catch (Exception ignored) {}
                           return true;
-                      }
+                          }
 
                       return false;
                   }
@@ -318,8 +380,6 @@ jobs:
 
               private void showAd(boolean reward) {
                   if (isFinishing()) return;
-                  if (adDialog != null && adDialog.isShowing()) return;
-
                   adDialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
                   adDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
                   adDialog.setCancelable(false);
@@ -348,10 +408,8 @@ jobs:
 
                   WebView aw = new WebView(this);
                   setupWeb(aw);
-                  aw.setWebViewClient(new SafeWebClient(true, false));
-
-                  long seed = System.currentTimeMillis() + random.nextInt(99999);
-                  aw.loadUrl(AD_URL + "?sub=reward_" + seed);
+                  aw.setWebViewClient(new SafeWebClient(false));
+                  aw.loadUrl(AD_URL);
                   l.addView(aw, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
                   adDialog.setContentView(l);
@@ -382,6 +440,7 @@ jobs:
 
               @Override
               protected void onDestroy() {
+                  handler.removeCallbacksAndMessages(null);
                   if (adDialog != null && adDialog.isShowing()) adDialog.dismiss();
                   if (bannerWebView != null) bannerWebView.destroy();
                   if (mainWebView != null) mainWebView.destroy();
