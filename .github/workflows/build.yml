@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 50
-                  versionName "6.6"
+                  versionCode 51
+                  versionName "6.7"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -272,12 +272,14 @@ jobs:
                   buildCard(root);
                   setContentView(root);
 
-                  // 30-Second Banner Auto-Refresh Loop
+                  // 30-Second Banner Auto-Refresh Loop with Cache-Buster
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
                           if (!isFinishing() && bannerWebView != null) {
-                              bannerWebView.loadUrl(AD_URL);
+                              bannerWebView.clearCache(true);
+                              String refreshUrl = AD_URL + (AD_URL.contains("?") ? "&" : "?") + "cb=" + System.currentTimeMillis();
+                              bannerWebView.loadUrl(refreshUrl);
                           }
                           handler.postDelayed(this, 30000);
                       }
@@ -369,6 +371,7 @@ jobs:
                   s.setAllowFileAccess(true);
                   s.setAllowContentAccess(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+                  s.setCacheMode(WebSettings.LOAD_NO_CACHE);
                   s.setUserAgentString(s.getUserAgentString() + " MobileApp");
                   wv.setWebChromeClient(new WebChromeClient());
               }
@@ -418,7 +421,7 @@ jobs:
 
                       if (isExternal || isAppRedirect) {
                           try {
-                              Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                               intent.setAction(Intent.ACTION_VIEW);
                               startActivity(intent);
                           } catch (Exception ignored) {}
