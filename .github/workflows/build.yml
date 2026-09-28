@@ -42,10 +42,6 @@ jobs:
 
           cp index.html app/src/main/assets/index.html
 
-          # Inject all Monetag zones (MultiTag, Push, OnClick, Vignette)
-          MONETAG_TAGS="<script src='https://quge5.com/tag.min.js' data-zone='287797' data-sdk='auto'></script><script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904980',s.src='https://n6wxm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11905293',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11905295',s.src='https://n6wxm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
-          sed -i "s|</body>|${MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
-
           if [ -f "icon.png" ]; then
             sudo apt-get update && sudo apt-get install -y imagemagick
 
@@ -121,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 65
-                  versionName "9.5"
+                  versionCode 72
+                  versionName "10.2"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -210,10 +206,10 @@ jobs:
                   super.onCreate(savedInstanceState);
                   FrameLayout root = new FrameLayout(this);
 
-                  // Main App WebView
+                  // 1. Main Application WebView
                   mainWebView = new WebView(this);
                   setupWeb(mainWebView);
-                  mainWebView.setWebViewClient(new SafeWebClient(false));
+                  mainWebView.setWebViewClient(new SafeWebClient(false, false));
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
@@ -222,12 +218,13 @@ jobs:
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
 
-                  // Bottom Real Live Banner Ad (WebView)
+                  // 2. Bottom Real Banner WebView (Monetag Real Live Ads)
                   bannerWebView = new WebView(this);
                   setupWeb(bannerWebView);
-                  bannerWebView.setWebViewClient(new SafeWebClient(true));
+                  bannerWebView.setWebViewClient(new SafeWebClient(false, true));
+                  
                   long seed = System.currentTimeMillis() + random.nextInt(9999);
-                  bannerWebView.loadUrl(AD_URL + "?zone=banner&sub=" + seed);
+                  bannerWebView.loadUrl(AD_URL + "?sub=banner_" + seed);
 
                   FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
                   bp.gravity = Gravity.BOTTOM;
@@ -250,9 +247,11 @@ jobs:
               }
 
               private class SafeWebClient extends WebViewClient {
+                  private final boolean isAdDialog;
                   private final boolean isBanner;
 
-                  public SafeWebClient(boolean isBanner) {
+                  public SafeWebClient(boolean isAdDialog, boolean isBanner) {
+                      this.isAdDialog = isAdDialog;
                       this.isBanner = isBanner;
                   }
 
@@ -260,17 +259,36 @@ jobs:
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
+                      // Block YouTube redirect loop strictly everywhere
+                      if (url.contains("youtube.com") || url.contains("youtu.be")) {
+                          if (isAdDialog) {
+                              long seed = System.currentTimeMillis() + random.nextInt(99999);
+                              view.loadUrl(AD_URL + "?sub=retry_" + seed);
+                          } else if (isBanner) {
+                              long seed = System.currentTimeMillis() + random.nextInt(9999);
+                              view.loadUrl(AD_URL + "?sub=banner_retry_" + seed);
+                          }
+                          return true;
+                      }
+
+                      // If banner ad is tapped by user, open destination smoothly in phone browser
+                      if (isBanner && (url.startsWith("http://") || url.startsWith("https://"))) {
+                          if (!url.contains("omg10.com")) {
+                              try {
+                                  Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                  startActivity(intent);
+                                  return true;
+                              } catch (Exception ignored) {}
+                          }
+                      }
+
                       if (url.startsWith("intent://")) {
                           try {
                               Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                               if (intent != null) {
-                                  try {
-                                      startActivity(intent);
-                                  } catch (Exception e) {
-                                      String fallback = intent.getStringExtra("browser_fallback_url");
-                                      if (fallback != null) {
-                                          view.loadUrl(fallback);
-                                      }
+                                  String fallback = intent.getStringExtra("browser_fallback_url");
+                                  if (fallback != null && !fallback.contains("youtube.com") && !fallback.contains("youtu.be")) {
+                                      view.loadUrl(fallback);
                                   }
                               }
                           } catch (Exception ignored) {}
@@ -278,23 +296,8 @@ jobs:
                       }
 
                       boolean isExternal = !url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("file://");
-                      boolean isAppRedirect = url.contains("play.google.com/store") || url.contains("youtube.com") || url.contains("youtu.be");
-
-                      if (isExternal || isAppRedirect) {
-                          try {
-                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                              startActivity(intent);
-                          } catch (Exception ignored) {}
+                      if (isExternal) {
                           return true;
-                      }
-
-                      // If banner is clicked, let it open the offer smoothly
-                      if (isBanner && (url.startsWith("http://") || url.startsWith("https://"))) {
-                          try {
-                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                              startActivity(intent);
-                              return true;
-                          } catch (Exception ignored) {}
                       }
 
                       return false;
@@ -345,10 +348,10 @@ jobs:
 
                   WebView aw = new WebView(this);
                   setupWeb(aw);
-                  aw.setWebViewClient(new SafeWebClient(false));
+                  aw.setWebViewClient(new SafeWebClient(true, false));
 
                   long seed = System.currentTimeMillis() + random.nextInt(99999);
-                  aw.loadUrl(AD_URL + "?sub=" + seed);
+                  aw.loadUrl(AD_URL + "?sub=reward_" + seed);
                   l.addView(aw, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
                   adDialog.setContentView(l);
