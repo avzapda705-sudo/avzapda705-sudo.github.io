@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 47
-                  versionName "6.3"
+                  versionCode 48
+                  versionName "6.4"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -218,17 +218,16 @@ jobs:
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
-                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 54, getResources().getDisplayMetrics());
+                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 64, getResources().getDisplayMetrics());
                   FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
 
-                  // Real Monetag Live Banner Strip (Centered & Mobile Fitted)
+                  // Real Monetag Live Banner Strip (Centered at Bottom)
                   bannerWebView = new WebView(this);
                   setupWeb(bannerWebView);
                   bannerWebView.getSettings().setLoadWithOverviewMode(true);
                   bannerWebView.getSettings().setUseWideViewPort(true);
-                  bannerWebView.getSettings().setTextZoom(85);
                   bannerWebView.setHorizontalScrollBarEnabled(false);
                   bannerWebView.setVerticalScrollBarEnabled(false);
                   bannerWebView.setBackgroundColor(Color.parseColor("#0b0f19"));
@@ -242,6 +241,8 @@ jobs:
                               "try{" +
                               "document.body.style.margin='0';" +
                               "document.body.style.padding='0';" +
+                              "document.body.style.width='100%';" +
+                              "document.body.style.height='100%';" +
                               "document.body.style.display='flex';" +
                               "document.body.style.justifyContent='center';" +
                               "document.body.style.alignItems='center';" +
