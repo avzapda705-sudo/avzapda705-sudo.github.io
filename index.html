@@ -679,6 +679,71 @@ var FIREBASE_DB_URL = "https://watchtoearn-4862d-default-rtdb.firebaseio.com/wit
 var SUPPORT_EMAIL = "help.watchtoearn@gmail.com";
 
 /* ==============================================
+   WEB AUDIO API SOUND GENERATOR & HAPTICS
+   ============================================== */
+var audioCtx = null;
+function getAudioContext(){
+  if(!audioCtx){
+    var AudioContext = window.AudioContext || window.webkitAudioContext;
+    if(AudioContext){
+      audioCtx = new AudioContext();
+    }
+  }
+  if(audioCtx && audioCtx.state === 'suspended'){
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+// Realistic Wheel Tick Sound
+function playTickSound(){
+  try{
+    var ctx = getAudioContext();
+    if(!ctx) return;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(650, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.04);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.04);
+  }catch(e){}
+}
+
+// Rewarded Win Chime (Ding-Ding)
+function playWinSound(){
+  try{
+    var ctx = getAudioContext();
+    if(!ctx) return;
+    [523.25, 659.25, 783.99, 1046.50].forEach(function(freq, i){
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      var startTime = ctx.currentTime + (i * 0.09);
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.36);
+    });
+  }catch(e){}
+}
+
+// Haptic Vibrate Helper
+function haptic(ms){
+  if(navigator && typeof navigator.vibrate === 'function'){
+    try{ navigator.vibrate(ms); }catch(e){}
+  }
+}
+
+/* ==============================================
    AUTOMATIC DAY / NIGHT THEME CONTROLLER
    ============================================== */
 function applyAutoTheme(){
@@ -692,8 +757,48 @@ function applyAutoTheme(){
   }
 }
 applyAutoTheme();
-// Check every 5 minutes automatically
 setInterval(applyAutoTheme, 300000);
+
+/* ==============================================
+   DAILY BONUS COUNTDOWN CONTROLLER
+   ============================================== */
+var bonusTimerInterval = null;
+function checkBonusState(){
+  var btn = $('bonusBtn');
+  if(!btn) return;
+  
+  if(localStorage.getItem('wte_bonus_date') === day()){
+    btn.disabled = true;
+    if(bonusTimerInterval) clearInterval(bonusTimerInterval);
+    
+    function updateRemainingTime(){
+      var now = new Date();
+      var midnight = new Date();
+      midnight.setHours(24, 0, 0, 0);
+      var diff = midnight.getTime() - now.getTime();
+      
+      if(diff <= 0){
+        clearInterval(bonusTimerInterval);
+        btn.disabled = false;
+        btn.textContent = '🎁 CLAIM DAILY BONUS';
+        return;
+      }
+      
+      var hrs = Math.floor(diff / 3600000);
+      var mins = Math.floor((diff % 3600000) / 60000);
+      var secs = Math.floor((diff % 60000) / 1000);
+      
+      btn.textContent = '⏳ Next Bonus in ' + hrs + 'h ' + (mins < 10 ? '0' : '') + mins + 'm ' + (secs < 10 ? '0' : '') + secs + 's';
+    }
+    
+    updateRemainingTime();
+    bonusTimerInterval = setInterval(updateRemainingTime, 1000);
+  } else {
+    if(bonusTimerInterval) clearInterval(bonusTimerInterval);
+    btn.disabled = false;
+    btn.textContent = '🎁 CLAIM DAILY BONUS';
+  }
+}
 
 var rewards=[
 {coins:5,weight:60},
@@ -888,6 +993,7 @@ ctx.fillText('SPIN',cx,cy+8);
    ===================================== */
 
 window.triggerAdMob=function(type){
+getAudioContext(); // Resume audio context on user interaction
 if(type==='watch'){
 if(watchAdsUsed()>=MAX_DAILY_ADS){
 toast('Daily limit reached! Come back tomorrow.');
@@ -919,6 +1025,8 @@ localStorage.setItem('wte_watch_count', String(used));
 
 balance+=10;
 saveBalance();
+haptic(50);
+playWinSound();
 $('videoText').textContent='✅ Completed +10 coins';
 toast('🎉 +10 Coins Added!');
 
@@ -933,8 +1041,9 @@ var n=20+Math.floor(Math.random()*11);
 balance+=n;
 saveBalance();
 localStorage.setItem('wte_bonus_date',day());
-$('bonusBtn').disabled=true;
-$('bonusBtn').textContent='✓ BONUS CLAIMED';
+checkBonusState();
+haptic([50, 50, 80]);
+playWinSound();
 toast('🎁 Daily Bonus +'+n+' Coins!');
 }
 else if(pendingRewardType==='spin'){
@@ -963,6 +1072,7 @@ function doSpin(){
 spinning=true;
 localStorage.setItem('wte_spin_count',String(spinUsed()+1));
 updateSpin();
+haptic(40);
 
 var reward=weighted();
 var index=rewards.findIndex(function(x){return x.coins===reward.coins;});
@@ -971,9 +1081,23 @@ var target=360*6-36-index*72;
 rotation+=target-(rotation%360);
 $('wheel').style.transform='rotate('+rotation+'deg)';
 
+// Dynamic Realistic Tick Sound Animation
+var tickCount = 0;
+var totalTicks = 26;
+function scheduleNextTick(){
+  if(tickCount >= totalTicks || !spinning) return;
+  playTickSound();
+  tickCount++;
+  var delay = 80 + Math.pow(tickCount / totalTicks, 2.2) * 380;
+  setTimeout(scheduleNextTick, delay);
+}
+scheduleNextTick();
+
 setTimeout(function(){
 balance+=reward.coins;
 saveBalance();
+haptic([60, 50, 100]);
+playWinSound();
 toast('🎉 You won '+reward.coins+' coins!');
 spinning=false;
 updateSpin();
@@ -1240,13 +1364,9 @@ updateWatchButtonState();
 syncLiveStatuses();
 fetchLiveWithdrawals();
 renderHistory();
+checkBonusState();
 
 $('profileName').value=localStorage.getItem('wte_name')||'';
-
-if(localStorage.getItem('wte_bonus_date')===day()){
-$('bonusBtn').disabled=true;
-$('bonusBtn').textContent='✓ BONUS CLAIMED';
-}
 }
 
 init();
