@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 51
-                  versionName "6.7"
+                  versionCode 52
+                  versionName "6.8"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -205,6 +205,7 @@ jobs:
               private static final String AD_URL = "https://omg10.com/4/11903025";
               private final Handler handler = new Handler(Looper.getMainLooper());
               private boolean bannerUserClicked = false;
+              private boolean videoAdUserClicked = false;
 
               @SuppressLint("ClickableViewAccessibility")
               @Override
@@ -214,7 +215,7 @@ jobs:
 
                   mainWebView = new WebView(this);
                   setupWeb(mainWebView);
-                  mainWebView.setWebViewClient(new SafeWebClient(false));
+                  mainWebView.setWebViewClient(new SafeWebClient(false, false));
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
@@ -232,7 +233,7 @@ jobs:
                   bannerWebView.setVerticalScrollBarEnabled(false);
                   bannerWebView.setBackgroundColor(Color.parseColor("#0b0f19"));
 
-                  bannerWebView.setWebViewClient(new SafeWebClient(true) {
+                  bannerWebView.setWebViewClient(new SafeWebClient(true, false) {
                       @Override
                       public void onPageFinished(WebView view, String url) {
                           super.onPageFinished(view, url);
@@ -378,15 +379,18 @@ jobs:
 
               private class SafeWebClient extends WebViewClient {
                   private final boolean isBanner;
+                  private final boolean isRewarded;
 
-                  public SafeWebClient(boolean isBanner) {
+                  public SafeWebClient(boolean isBanner, boolean isRewarded) {
                       this.isBanner = isBanner;
+                      this.isRewarded = isRewarded;
                   }
 
                   @Override
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
+                      // Block banner automatic redirects; open external browser only if banner was clicked
                       if (isBanner) {
                           if (bannerUserClicked && !url.contains("omg10.com") && (url.startsWith("http://") || url.startsWith("https://"))) {
                               try {
@@ -397,6 +401,22 @@ jobs:
                               } catch (Exception ignored) {}
                           }
                           return false;
+                      }
+
+                      // Block video ad automatic redirects to YouTube/PlayStore; open only if user clicked
+                      if (isRewarded) {
+                          boolean isRedirectApp = url.contains("play.google.com/store") || url.contains("youtube.com") || url.contains("youtu.be") || url.startsWith("market://");
+                          if (isRedirectApp) {
+                              if (videoAdUserClicked) {
+                                  try {
+                                      videoAdUserClicked = false;
+                                      Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                      startActivity(intent);
+                                      return true;
+                                  } catch (Exception ignored) {}
+                              }
+                              return true; // Click vagar automatic redirect block karse
+                          }
                       }
 
                       if (url.startsWith("intent://")) {
@@ -444,14 +464,17 @@ jobs:
                   public void showInterstitial() { runOnUiThread(() -> showAd(true)); }
               }
 
+              @SuppressLint("ClickableViewAccessibility")
               private void showAd(boolean reward) {
                   if (isFinishing()) return;
+                  videoAdUserClicked = false;
                   adDialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
                   adDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
                   adDialog.setCancelable(false);
 
                   LinearLayout l = new LinearLayout(this);
                   l.setOrientation(LinearLayout.VERTICAL);
+                  l.setBackgroundColor(Color.parseColor("#0b0f19"));
 
                   LinearLayout tb = new LinearLayout(this);
                   tb.setGravity(Gravity.CENTER_VERTICAL);
@@ -474,7 +497,18 @@ jobs:
 
                   WebView aw = new WebView(this);
                   setupWeb(aw);
-                  aw.setWebViewClient(new SafeWebClient(false));
+                  aw.setBackgroundColor(Color.parseColor("#0b0f19"));
+                  aw.setWebViewClient(new SafeWebClient(false, true));
+
+                  // User touch guard for Video Ad
+                  aw.setOnTouchListener((v, event) -> {
+                      if (event.getAction() == MotionEvent.ACTION_UP) {
+                          videoAdUserClicked = true;
+                          handler.postDelayed(() -> videoAdUserClicked = false, 2000);
+                      }
+                      return false;
+                  });
+
                   aw.loadUrl(AD_URL);
                   l.addView(aw, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
