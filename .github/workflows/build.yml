@@ -42,6 +42,10 @@ jobs:
 
           cp index.html app/src/main/assets/index.html
 
+          # Inject all Monetag zones (MultiTag, Push, OnClick, Vignette)
+          MONETAG_TAGS="<script src='https://quge5.com/tag.min.js' data-zone='287797' data-sdk='auto'></script><script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904980',s.src='https://n6wxm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11905293',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11905295',s.src='https://n6wxm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
+          sed -i "s|</body>|${MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
+
           if [ -f "icon.png" ]; then
             sudo apt-get update && sudo apt-get install -y imagemagick
 
@@ -117,8 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 43
-                  versionName "5.9"
+                  versionCode 65
+                  versionName "9.5"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -169,6 +173,7 @@ jobs:
           cat > app/src/main/java/com/watchtoearn/app/MainActivity.java <<'EOF'
           package com.watchtoearn.app;
 
+          import android.annotation.SuppressLint;
           import android.app.Activity;
           import android.app.Dialog;
           import android.content.Intent;
@@ -177,8 +182,6 @@ jobs:
           import android.net.http.SslError;
           import android.os.Bundle;
           import android.os.CountDownTimer;
-          import android.os.Handler;
-          import android.os.Looper;
           import android.util.TypedValue;
           import android.view.Gravity;
           import android.view.View;
@@ -193,139 +196,47 @@ jobs:
           import android.widget.FrameLayout;
           import android.widget.LinearLayout;
           import android.widget.TextView;
-          import androidx.cardview.widget.CardView;
+          import java.util.Random;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
+              private WebView bannerWebView;
               private Dialog adDialog;
-              private CardView floatingCardAd;
               private static final String AD_URL = "https://omg10.com/4/11903025";
-              private final Handler handler = new Handler(Looper.getMainLooper());
+              private final Random random = new Random();
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   FrameLayout root = new FrameLayout(this);
 
+                  // Main App WebView
                   mainWebView = new WebView(this);
                   setupWeb(mainWebView);
-                  mainWebView.setWebViewClient(new SafeWebClient());
+                  mainWebView.setWebViewClient(new SafeWebClient(false));
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
-                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 54, getResources().getDisplayMetrics());
+                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 60, getResources().getDisplayMetrics());
                   FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
 
-                  LinearLayout banner = new LinearLayout(this);
-                  banner.setBackgroundColor(Color.parseColor("#111827"));
-                  banner.setGravity(Gravity.CENTER_VERTICAL);
-                  banner.setPadding(24, 0, 24, 0);
-
-                  TextView badge = new TextView(this);
-                  badge.setText("AD");
-                  badge.setTextColor(Color.BLACK);
-                  badge.setBackgroundColor(Color.parseColor("#F59E0B"));
-                  badge.setPadding(10, 4, 10, 4);
-                  badge.setTextSize(11);
-                  banner.addView(badge);
-
-                  TextView bTxt = new TextView(this);
-                  bTxt.setText("Special Sponsored Reward Offers");
-                  bTxt.setTextColor(Color.WHITE);
-                  bTxt.setTextSize(13);
-                  bTxt.setPadding(16, 0, 0, 0);
-                  banner.addView(bTxt, new LinearLayout.LayoutParams(0, -2, 1.0f));
-
-                  Button bBtn = new Button(this);
-                  bBtn.setText("OPEN");
-                  bBtn.setTextSize(11);
-                  bBtn.setTextColor(Color.WHITE);
-                  bBtn.setBackgroundColor(Color.parseColor("#7C3AED"));
-                  banner.addView(bBtn);
-
-                  View.OnClickListener bClick = v -> showAd(false);
-                  banner.setOnClickListener(bClick);
-                  bBtn.setOnClickListener(bClick);
+                  // Bottom Real Live Banner Ad (WebView)
+                  bannerWebView = new WebView(this);
+                  setupWeb(bannerWebView);
+                  bannerWebView.setWebViewClient(new SafeWebClient(true));
+                  long seed = System.currentTimeMillis() + random.nextInt(9999);
+                  bannerWebView.loadUrl(AD_URL + "?zone=banner&sub=" + seed);
 
                   FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
                   bp.gravity = Gravity.BOTTOM;
-                  root.addView(banner, bp);
+                  root.addView(bannerWebView, bp);
 
-                  buildCard(root);
                   setContentView(root);
-
-                  handler.postDelayed(new Runnable() {
-                      @Override
-                      public void run() {
-                          if (!isFinishing() && floatingCardAd != null) {
-                              floatingCardAd.setVisibility(View.VISIBLE);
-                              floatingCardAd.bringToFront();
-                              handler.postDelayed(() -> {
-                                  if (floatingCardAd != null) floatingCardAd.setVisibility(View.GONE);
-                              }, 8000);
-                          }
-                          handler.postDelayed(this, 30000);
-                      }
-                  }, 5000);
               }
 
-              private void buildCard(FrameLayout root) {
-                  floatingCardAd = new CardView(this);
-                  floatingCardAd.setRadius(24);
-                  floatingCardAd.setCardElevation(24);
-                  floatingCardAd.setCardBackgroundColor(Color.WHITE);
-                  floatingCardAd.setVisibility(View.GONE);
-
-                  LinearLayout cl = new LinearLayout(this);
-                  cl.setGravity(Gravity.CENTER_VERTICAL);
-                  cl.setPadding(20, 16, 20, 16);
-
-                  TextView ic = new TextView(this);
-                  ic.setText("🎁");
-                  ic.setTextSize(22);
-                  cl.addView(ic);
-
-                  LinearLayout tl = new LinearLayout(this);
-                  tl.setOrientation(LinearLayout.VERTICAL);
-                  tl.setPadding(16, 0, 8, 0);
-
-                  TextView h = new TextView(this);
-                  h.setText("Special Bonus Available!");
-                  h.setTextColor(Color.BLACK);
-                  h.setTextSize(14);
-
-                  TextView s = new TextView(this);
-                  s.setText("Tap to view offer & earn coins");
-                  s.setTextColor(Color.GRAY);
-                  s.setTextSize(11);
-
-                  tl.addView(h);
-                  tl.addView(s);
-                  cl.addView(tl, new LinearLayout.LayoutParams(0, -2, 1.0f));
-
-                  TextView close = new TextView(this);
-                  close.setText("✖");
-                  close.setTextSize(18);
-                  close.setTextColor(Color.GRAY);
-                  close.setPadding(12, 12, 12, 12);
-                  close.setOnClickListener(v -> floatingCardAd.setVisibility(View.GONE));
-                  cl.addView(close);
-
-                  cl.setOnClickListener(v -> {
-                      floatingCardAd.setVisibility(View.GONE);
-                      showAd(false);
-                  });
-
-                  floatingCardAd.addView(cl);
-                  FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(-1, -2);
-                  cp.gravity = Gravity.TOP;
-                  int topMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 110, getResources().getDisplayMetrics());
-                  cp.setMargins(24, topMargin, 24, 0);
-                  root.addView(floatingCardAd, cp);
-              }
-
+              @SuppressLint("SetJavaScriptEnabled")
               private void setupWeb(WebView wv) {
                   WebSettings s = wv.getSettings();
                   s.setJavaScriptEnabled(true);
@@ -334,11 +245,17 @@ jobs:
                   s.setAllowFileAccess(true);
                   s.setAllowContentAccess(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-                  s.setUserAgentString(s.getUserAgentString() + " MobileApp");
+                  s.setUserAgentString("Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36");
                   wv.setWebChromeClient(new WebChromeClient());
               }
 
               private class SafeWebClient extends WebViewClient {
+                  private final boolean isBanner;
+
+                  public SafeWebClient(boolean isBanner) {
+                      this.isBanner = isBanner;
+                  }
+
                   @Override
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
@@ -371,6 +288,15 @@ jobs:
                           return true;
                       }
 
+                      // If banner is clicked, let it open the offer smoothly
+                      if (isBanner && (url.startsWith("http://") || url.startsWith("https://"))) {
+                          try {
+                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                              startActivity(intent);
+                              return true;
+                          } catch (Exception ignored) {}
+                      }
+
                       return false;
                   }
 
@@ -389,6 +315,8 @@ jobs:
 
               private void showAd(boolean reward) {
                   if (isFinishing()) return;
+                  if (adDialog != null && adDialog.isShowing()) return;
+
                   adDialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
                   adDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
                   adDialog.setCancelable(false);
@@ -417,8 +345,10 @@ jobs:
 
                   WebView aw = new WebView(this);
                   setupWeb(aw);
-                  aw.setWebViewClient(new SafeWebClient());
-                  aw.loadUrl(AD_URL);
+                  aw.setWebViewClient(new SafeWebClient(false));
+
+                  long seed = System.currentTimeMillis() + random.nextInt(99999);
+                  aw.loadUrl(AD_URL + "?sub=" + seed);
                   l.addView(aw, new LinearLayout.LayoutParams(-1, 0, 1.0f));
 
                   adDialog.setContentView(l);
@@ -449,8 +379,8 @@ jobs:
 
               @Override
               protected void onDestroy() {
-                  handler.removeCallbacksAndMessages(null);
                   if (adDialog != null && adDialog.isShowing()) adDialog.dismiss();
+                  if (bannerWebView != null) bannerWebView.destroy();
                   if (mainWebView != null) mainWebView.destroy();
                   super.onDestroy();
               }
