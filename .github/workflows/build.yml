@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 45
-                  versionName "6.1"
+                  versionCode 46
+                  versionName "6.2"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -249,16 +249,23 @@ jobs:
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
-                          if (!isFinishing() && floatingCardAd != null) {
-                              floatingCardAd.setVisibility(View.VISIBLE);
-                              floatingCardAd.bringToFront();
-                              handler.postDelayed(() -> {
-                                  if (floatingCardAd != null) floatingCardAd.setVisibility(View.GONE);
-                              }, 8000);
+                          if (!isFinishing() && floatingCardAd != null && mainWebView != null) {
+                              mainWebView.evaluateJavascript(
+                                  "(function(){ var el = document.getElementById('authOverlay'); return (el && el.style.display !== 'none'); })();",
+                                  isLoginOpen -> {
+                                      if ("false".equals(isLoginOpen)) {
+                                          floatingCardAd.setVisibility(View.VISIBLE);
+                                          floatingCardAd.bringToFront();
+                                          handler.postDelayed(() -> {
+                                              if (floatingCardAd != null) floatingCardAd.setVisibility(View.GONE);
+                                          }, 8000);
+                                      }
+                                  }
+                              );
                           }
                           handler.postDelayed(this, 30000);
                       }
-                  }, 5000);
+                  }, 8000);
               }
 
               private void buildCard(FrameLayout root) {
