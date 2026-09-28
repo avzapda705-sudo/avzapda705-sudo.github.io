@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 56
-                  versionName "7.2"
+                  versionCode 58
+                  versionName "7.4"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -207,6 +207,7 @@ jobs:
               private static final String VIDEO_AD_URL = "https://omg10.com/4/11903025";
               private final Handler handler = new Handler(Looper.getMainLooper());
               private boolean bannerUserClicked = false;
+              private long lastImageAdTrigger = 0;
 
               @SuppressLint("ClickableViewAccessibility")
               @Override
@@ -222,8 +223,7 @@ jobs:
                       @Override
                       public void onPageFinished(WebView view, String url) {
                           super.onPageFinished(view, url);
-                          // Inject Monetag Vignette Banner Script directly into HTML
-                          injectVignetteBanner(view);
+                          injectVignetteSystem(view);
                       }
                   });
 
@@ -234,7 +234,7 @@ jobs:
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
 
-                  // Real Monetag Live Banner Strip (Centered at Bottom)
+                  // Live Bottom Banner
                   bannerWebView = new WebView(this);
                   setupWeb(bannerWebView, true);
                   bannerWebView.getSettings().setLoadWithOverviewMode(true);
@@ -283,10 +283,9 @@ jobs:
                   buildCard(root);
                   setContentView(root);
 
-                  // Preload video ad immediately in background
                   preloadVideoAd();
 
-                  // 30-Second Banner Auto-Refresh Loop with Cache-Buster
+                  // 30-Second Banner Refresh
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
@@ -299,7 +298,7 @@ jobs:
                       }
                   }, 30000);
 
-                  // Floating Bonus Card Loop (Only after user logs in)
+                  // Floating Bonus Loop
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
@@ -322,16 +321,35 @@ jobs:
                   }, 8000);
               }
 
-              // Injects Vignette Tag (Pure Native Image Pop-up with Close X)
-              private void injectVignetteBanner(WebView view) {
+              // Injects dual zones and triggers fresh vignette ad
+              private void injectVignetteSystem(WebView view) {
                   view.evaluateJavascript(
                       "(function(){" +
-                      "  if (window.vignetteLoaded) return;" +
-                      "  window.vignetteLoaded = true;" +
-                      "  var s = document.createElement('script');" +
-                      "  s.dataset.zone = '11914715';" +
-                      "  s.src = 'https://n6wxm.com/vignette.min.js';" +
-                      "  document.head.appendChild(s);" +
+                      "  function loadTag(zoneId) {" +
+                      "    var s = document.createElement('script');" +
+                      "    s.dataset.zone = zoneId;" +
+                      "    s.src = 'https://n6wxm.com/vignette.min.js?cb=' + Date.now();" +
+                      "    document.head.appendChild(s);" +
+                      "  }" +
+                      "  loadTag('11914715');" +
+                      "  loadTag('11914761');" +
+                      "  function hookButtons() {" +
+                      "    var items = document.querySelectorAll('*');" +
+                      "    items.forEach(function(el) {" +
+                      "      var t = (el.innerText || '').trim().toLowerCase();" +
+                      "      if (['earn', 'refer', 'withdraw'].includes(t) && el.children.length === 0) {" +
+                      "        var btn = el.closest('button') || el.closest('a') || el.closest('div');" +
+                      "        if (btn && !btn.dataset.vignetteHooked) {" +
+                      "          btn.dataset.vignetteHooked = 'true';" +
+                      "          btn.addEventListener('click', function() {" +
+                      "            if (window.AndroidAd) { window.AndroidAd.triggerTabAd(); }" +
+                      "          }, true);" +
+                      "        }" +
+                      "      }" +
+                      "    });" +
+                      "  }" +
+                      "  hookButtons();" +
+                      "  setInterval(hookButtons, 2000);" +
                       "})();",
                       null
                   );
@@ -436,7 +454,6 @@ jobs:
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
-                      // Banner: open external browser only if manually touched
                       if (isBanner) {
                           if (bannerUserClicked && !url.contains("omg10.com") && (url.startsWith("http://") || url.startsWith("https://"))) {
                               try {
@@ -449,7 +466,6 @@ jobs:
                           return false;
                       }
 
-                      // Rewarded Video / In-App Overlay: Lock inside app dialog
                       if (isRewarded) {
                           if (url.startsWith("http://") || url.startsWith("https://")) {
                               view.loadUrl(url);
@@ -499,8 +515,28 @@ jobs:
               public class AdBridge {
                   @JavascriptInterface
                   public void showRewarded() { runOnUiThread(() -> showAd(true)); }
+
                   @JavascriptInterface
-                  public void showInterstitial() { runOnUiThread(() -> showAd(true)); }
+                  public void triggerTabAd() {
+                      runOnUiThread(() -> {
+                          long now = System.currentTimeMillis();
+                          // 10-Second interval for navigation tabs
+                          if (now - lastImageAdTrigger >= 10000 && mainWebView != null) {
+                              lastImageAdTrigger = now;
+                              mainWebView.evaluateJavascript(
+                                  "(function(){" +
+                                  "  try {" +
+                                  "    var s = document.createElement('script');" +
+                                  "    s.dataset.zone = '" + (now % 2 == 0 ? "11914761" : "11914715") + "';" +
+                                  "    s.src = 'https://n6wxm.com/vignette.min.js?cb=' + Date.now();" +
+                                  "    document.head.appendChild(s);" +
+                                  "  } catch(e) {}" +
+                                  "})();",
+                                  null
+                              );
+                          }
+                      });
+                  }
               }
 
               @SuppressLint("ClickableViewAccessibility")
@@ -514,7 +550,7 @@ jobs:
                   l.setOrientation(LinearLayout.VERTICAL);
                   l.setBackgroundColor(Color.parseColor("#0b0f19"));
 
-                  // Top Status Bar with Countdown
+                  // Countdown Top Bar
                   LinearLayout tb = new LinearLayout(this);
                   tb.setGravity(Gravity.CENTER_VERTICAL);
                   tb.setBackgroundColor(Color.parseColor("#1F2937"));
@@ -534,7 +570,6 @@ jobs:
                   tb.addView(cb);
                   l.addView(tb);
 
-                  // Use preloaded ad view directly for instant display
                   final WebView activeAdView;
                   if (preloadedVideoWebView != null) {
                       activeAdView = preloadedVideoWebView;
@@ -579,7 +614,6 @@ jobs:
                       if (reward && mainWebView != null) {
                           mainWebView.post(() -> mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();}", null));
                       }
-                      // Preload the next ad right away
                       preloadVideoAd();
                   });
               }
