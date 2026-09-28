@@ -160,6 +160,75 @@ text-align:center;
 font-weight:bold;
 color:#7a5600
 }
+
+/* =====================================
+   LIVE TICKER & SUPPORT STYLES
+   ===================================== */
+.live-ticker-wrap{
+background:#1e1035;
+color:#00ff88;
+padding:11px 16px;
+border-radius:16px;
+margin-bottom:18px;
+display:flex;
+align-items:center;
+overflow:hidden;
+font-size:15px;
+font-weight:bold;
+box-shadow:0 4px 14px rgba(0,0,0,.08)
+}
+.ticker-badge{
+background:#00ff88;
+color:#111;
+font-size:11px;
+padding:4px 8px;
+border-radius:8px;
+margin-right:10px;
+white-space:nowrap;
+text-transform:uppercase;
+font-weight:900
+}
+.ticker-marquee{
+white-space:nowrap;
+overflow:hidden;
+flex:1;
+position:relative
+}
+.ticker-content{
+display:inline-block;
+white-space:nowrap;
+animation:tickerScroll 22s linear infinite
+}
+@keyframes tickerScroll{
+0%{transform:translateX(100%)}
+100%{transform:translateX(-100%)}
+}
+.rate-badge{
+background:linear-gradient(90deg,#efe6ff,#f9f5ff);
+border:1.5px dashed #8738d4;
+border-radius:16px;
+padding:12px 16px;
+margin:14px 0;
+font-size:16px;
+color:#5b1e9c;
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-weight:bold
+}
+.support-card{
+background:#faf8ff;
+border:1px solid #ebdfff;
+border-radius:20px;
+padding:18px;
+margin-top:20px
+}
+.faq-item{
+margin-bottom:12px;
+font-size:14px;
+line-height:1.45
+}
+.faq-item b{color:#5b1e9c}
 </style>
 </head>
 
@@ -180,6 +249,16 @@ color:#7a5600
 
 
 <main class="wrap">
+
+<!-- LIVE TICKER DISPLAY -->
+<div class="live-ticker-wrap">
+<span class="ticker-badge">⚡ LIVE</span>
+<div class="ticker-marquee">
+<div class="ticker-content" id="liveTickerText">
+🟢 Rahul (987***@upi) withdrew ₹1 • 🟢 Amit (912***@upi) withdrew ₹2 • 🟢 Priya (884***@upi) withdrew ₹1
+</div>
+</div>
+</div>
 
 <section id="home" class="page active">
 
@@ -285,7 +364,12 @@ Watch a sponsored ad before each spin.
 <div class="card">
 <h2>💸 Withdraw</h2>
 <div class="muted">
-Minimum withdrawal limit: 200 coins.
+Instant UPI Transfer • Minimum 200 coins required.
+</div>
+
+<div class="rate-badge">
+<span>💎 Conversion Rate:</span>
+<span>200 Coins = ₹1</span>
 </div>
 
 <div style="
@@ -307,7 +391,7 @@ placeholder="Enter UPI ID (e.g., username@upi)">
 class="input"
 id="amount"
 type="number"
-placeholder="Coins to withdraw">
+placeholder="Coins to withdraw (Min. 200)">
 
 <button
 class="btn"
@@ -364,6 +448,27 @@ class="btn"
 onclick="saveProfile()">
 💾 SAVE PROFILE
 </button>
+
+<div class="support-card">
+<h3 style="margin-top:0;font-size:20px;color:#4a1584">ℹ️ App Info & Support</h3>
+<div class="faq-item">
+<b>• Conversion Rate:</b> 200 Coins = ₹1. Withdraw anytime once you hit 200 coins.
+</div>
+<div class="faq-item">
+<b>• Payout Speed:</b> Payments are processed directly to your registered UPI ID daily.
+</div>
+<div class="faq-item">
+<b>• Fair Usage:</b> Complete tasks genuinely without auto-clickers to ensure smooth payouts.
+</div>
+
+<button
+class="btn"
+onclick="contactSupport()"
+style="background:linear-gradient(90deg,#4285f4,#34a853);font-size:16px;padding:14px;margin-top:10px">
+✉️ EMAIL SUPPORT
+</button>
+</div>
+
 </div>
 </section>
 
@@ -398,6 +503,7 @@ onclick="saveProfile()">
 'use strict';
 
 var FIREBASE_DB_URL = "https://watchtoearn-4862d-default-rtdb.firebaseio.com/withdrawals";
+var SUPPORT_EMAIL = "help.watchtoearn@gmail.com";
 
 var rewards=[
 {coins:5,weight:60},
@@ -455,6 +561,18 @@ saveBalance();
 function day(){
 var d=new Date();
 return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+}
+
+/* Mask UPI for Privacy */
+function maskUpi(rawUpi){
+if(!rawUpi) return 'user***@upi';
+var parts = rawUpi.split('@');
+var handle = parts[0] || '';
+var domain = parts[1] || 'upi';
+if(handle.length <= 3){
+return handle + '***@' + domain;
+}
+return handle.substring(0,3) + '***@' + domain;
 }
 
 /* Background Daily Ads Tracking */
@@ -686,7 +804,7 @@ return;
 }
 
 if(amount<200){
-toast('Minimum withdrawal is 200 coins');
+toast('Minimum withdrawal is 200 coins (₹1)');
 return;
 }
 
@@ -695,17 +813,22 @@ toast('Insufficient balance');
 return;
 }
 
+/* Conversion: 200 coins = ₹1 */
+var inrAmount = (amount / 200).toFixed(2).replace(/\.00$/, '');
+
 balance-=amount;
 saveBalance();
 
 var reqId = "REQ_" + Date.now();
 var reqDate = new Date().toLocaleString();
-var userName = localStorage.getItem('wte_name')||'Guest User';
+var userName = localStorage.getItem('wte_name')||'User';
 
 var newReq = {
 id: reqId,
 amount: amount,
+inr: '₹' + inrAmount,
 upi: upi,
+user: userName,
 date: reqDate,
 status: 'Pending'
 };
@@ -716,7 +839,15 @@ localStorage.setItem('wte_history',JSON.stringify(h));
 
 $('amount').value='';
 renderHistory();
-toast('Withdrawal request submitted');
+toast('Withdrawal request submitted!');
+
+/* Immediately prepend to live ticker strip */
+var masked = maskUpi(upi);
+var ticker = $('liveTickerText');
+if(ticker){
+var liveEntry = '🟢 ' + userName + ' (' + masked + ') withdrew ₹' + inrAmount + ' • ';
+ticker.innerHTML = liveEntry + ticker.innerHTML;
+}
 
 fetch(FIREBASE_DB_URL + "/" + reqId + ".json", {
   method: "PUT",
@@ -730,7 +861,7 @@ var chatId = "6748953573";
 var textMsg = "💸 *New Withdrawal Request!*\n\n"
             + "🆔 *ID:* `" + reqId + "`\n"
             + "👤 *User:* " + userName + "\n"
-            + "🪙 *Coins:* " + amount + "\n"
+            + "🪙 *Coins:* " + amount + " (= ₹" + inrAmount + ")\n"
             + "💳 *UPI ID:* `" + upi + "`\n"
             + "📅 *Date:* " + reqDate;
 
@@ -744,6 +875,35 @@ fetch("https://api.telegram.org/bot" + botToken + "/sendMessage", {
   })
 }).catch(function(err){});
 };
+
+function fetchLiveWithdrawals(){
+fetch(FIREBASE_DB_URL + ".json")
+  .then(function(res){ return res.json(); })
+  .then(function(data){
+    if(!data) return;
+    var keys = Object.keys(data);
+    if(!keys.length) return;
+    
+    // Sort latest first
+    keys.sort().reverse();
+    var latest = keys.slice(0, 8);
+    var tickerItems = [];
+    
+    latest.forEach(function(k){
+      var item = data[k];
+      if(item && item.upi){
+        var uName = item.user || 'User';
+        var uUpi = maskUpi(item.upi);
+        var inr = item.inr || ('₹' + Math.max(1, Math.floor((item.amount || 200) / 200)));
+        tickerItems.push('🟢 ' + uName + ' (' + uUpi + ') withdrew ' + inr);
+      }
+    });
+    
+    if(tickerItems.length && $('liveTickerText')){$('liveTickerText').innerHTML = tickerItems.join(' • ') + ' • ';
+    }
+  })
+  .catch(function(e){});
+}
 
 function syncLiveStatuses(){
 var h=JSON.parse(localStorage.getItem('wte_history')||'[]');
@@ -780,8 +940,9 @@ return;
 el.innerHTML='<h3>Withdrawal History</h3>'+h.map(function(x){
 var statusColor = (x.status === 'Success' || x.status === 'Completed') ? '#16a34a' : (x.status === 'Rejected' ? '#dc2626' : '#d97706');
 var statusIcon = (x.status === 'Success' || x.status === 'Completed') ? '✅ ' : '';
+var inrText = x.inr ? ' ('+x.inr+')' : ' (₹' + (x.amount/200).toFixed(1) + ')';
 return '<div class="history">'
-+'<b>'+x.amount+' coins</b><br>'
++'<b>'+x.amount+' coins'+inrText+'</b><br>'
 +'UPI: '+x.upi+'<br>'
 +x.date+'<br>'
 +'Status: <b style="color:'+statusColor+'">'+statusIcon+x.status+'</b>'
@@ -847,7 +1008,7 @@ window.location.href=url;
 };
 
 /* =========================
-   PROFILE
+   PROFILE & SUPPORT
    ========================= */
 
 window.saveProfile=function(){
@@ -858,6 +1019,13 @@ return;
 }
 localStorage.setItem('wte_name',name);
 toast('✅ Profile saved successfully');
+};
+
+window.contactSupport=function(){
+var user = localStorage.getItem('wte_name') || 'App User';
+var subject = encodeURIComponent("Support Request - Watch to Earn");
+var body = encodeURIComponent("Hello Support Team,\n\nUser: " + user + "\nIssue:\n");
+window.location.href = "mailto:" + SUPPORT_EMAIL + "?subject=" + subject + "&body=" + body;
 };
 
 /* =========================
@@ -871,6 +1039,7 @@ updateSpin();
 updateRef();
 updateWatchButtonState();
 syncLiveStatuses();
+fetchLiveWithdrawals();
 renderHistory();
 
 $('profileName').value=localStorage.getItem('wte_name')||'';
