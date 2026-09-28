@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 44
-                  versionName "6.0"
+                  versionCode 45
+                  versionName "6.1"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -169,6 +169,7 @@ jobs:
           cat > app/src/main/java/com/watchtoearn/app/MainActivity.java <<'EOF'
           package com.watchtoearn.app;
 
+          import android.annotation.SuppressLint;
           import android.app.Activity;
           import android.app.Dialog;
           import android.content.Intent;
@@ -181,6 +182,7 @@ jobs:
           import android.os.Looper;
           import android.util.TypedValue;
           import android.view.Gravity;
+          import android.view.MotionEvent;
           import android.view.View;
           import android.view.Window;
           import android.webkit.JavascriptInterface;
@@ -202,7 +204,9 @@ jobs:
               private CardView floatingCardAd;
               private static final String AD_URL = "https://omg10.com/4/11903025";
               private final Handler handler = new Handler(Looper.getMainLooper());
+              private boolean bannerUserClicked = false;
 
+              @SuppressLint("ClickableViewAccessibility")
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
@@ -223,6 +227,16 @@ jobs:
                   bannerWebView = new WebView(this);
                   setupWeb(bannerWebView);
                   bannerWebView.setWebViewClient(new SafeWebClient(true));
+                  
+                  // Only allow opening external browser if user genuinely touched the banner
+                  bannerWebView.setOnTouchListener((v, event) -> {
+                      if (event.getAction() == MotionEvent.ACTION_UP) {
+                          bannerUserClicked = true;
+                          handler.postDelayed(() -> bannerUserClicked = false, 2000);
+                      }
+                      return false;
+                  });
+
                   bannerWebView.loadUrl(AD_URL);
 
                   FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
@@ -325,13 +339,17 @@ jobs:
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
-                      // Open clicked banner ads cleanly in system browser
-                      if (isBanner && !url.contains("omg10.com") && (url.startsWith("http://") || url.startsWith("https://"))) {
-                          try {
-                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                              startActivity(intent);
-                              return true;
-                          } catch (Exception ignored) {}
+                      // Block unwanted automatic Chrome opening; open external browser only if user touched the banner
+                      if (isBanner) {
+                          if (bannerUserClicked && !url.contains("omg10.com") && (url.startsWith("http://") || url.startsWith("https://"))) {
+                              try {
+                                  bannerUserClicked = false;
+                                  Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                  startActivity(intent);
+                                  return true;
+                              } catch (Exception ignored) {}
+                          }
+                          return false;
                       }
 
                       if (url.startsWith("intent://")) {
@@ -360,7 +378,7 @@ jobs:
                               startActivity(intent);
                           } catch (Exception ignored) {}
                           return true;
-                          }
+                      }
 
                       return false;
                   }
