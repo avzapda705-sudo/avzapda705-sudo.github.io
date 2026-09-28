@@ -41,11 +41,17 @@ jobs:
           mkdir -p app/src/main/res/mipmap-anydpi-v26
 
           cp index.html app/src/main/assets/index.html
+          if [ -f "sw.js" ]; then
+            cp sw.js app/src/main/assets/sw.js
+          fi
+
+          # Inject all Monetag zones (MultiTag, Push, OnClick, Vignette)
+          MONETAG_TAGS="<script src='https://quge5.com/tag.min.js' data-zone='287797' data-sdk='auto'></script><script>(function(s){s.dataset.zone='11904245',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904271',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11904980',s.src='https://n6wxm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11905293',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script><script>(function(s){s.dataset.zone='11905295',s.src='https://n6wxm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>"
+          sed -i "s|</body>|${MONETAG_TAGS}</body>|g" app/src/main/assets/index.html || true
 
           if [ -f "icon.png" ]; then
             sudo apt-get update && sudo apt-get install -y imagemagick
 
-            # Standard mipmap launcher icons
             for size in 48:mdpi 72:hdpi 96:xhdpi 144:xxhdpi 192:xxxhdpi; do
               dim="${size%%:*}"
               folder="${size##*:}"
@@ -53,7 +59,6 @@ jobs:
               convert icon.png -resize "${dim}x${dim}^" -gravity center -extent "${dim}x${dim}" PNG32:app/src/main/res/mipmap-${folder}/ic_launcher_round.png
             done
 
-            # Adaptive foreground scaled to fit safe circle without cropping text
             for size in 108:mdpi 162:hdpi 216:xhdpi 324:xxhdpi 432:xxxhdpi; do
               canvas="${size%%:*}"
               folder="${size##*:}"
@@ -61,7 +66,6 @@ jobs:
               convert icon.png -resize "${inner}x${inner}" -background none -gravity center -extent "${canvas}x${canvas}" PNG32:app/src/main/res/mipmap-${folder}/ic_launcher_foreground.png
             done
 
-            # Background color matching image navy tone
             cat > app/src/main/res/values/ic_launcher_background.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
@@ -95,21 +99,12 @@ jobs:
 
           cat > settings.gradle <<'EOF'
           pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
           }
-
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
+              repositories { google(); mavenCentral() }
           }
-
           rootProject.name = "WatchToEarn"
           include(":app")
           EOF
@@ -121,27 +116,21 @@ jobs:
           EOF
 
           cat > app/build.gradle <<'EOF'
-          plugins {
-              id 'com.android.application'
-          }
-
+          plugins { id 'com.android.application' }
           android {
               namespace "com.watchtoearn.app"
               compileSdk 35
-
               defaultConfig {
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 17
-                  versionName "2.6"
+                  versionCode 56
+                  versionName "8.1"
               }
-
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
               }
-
               buildTypes {
                   release {
                       minifyEnabled false
@@ -149,311 +138,322 @@ jobs:
                   }
               }
           }
-
           dependencies {
-              implementation "com.unity3d.ads:unity-ads:4.12.5"
               implementation "androidx.annotation:annotation:1.9.1"
+              implementation "androidx.webkit:webkit:1.12.1"
           }
           EOF
 
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
               <application
                   android:allowBackup="true"
                   android:label="Watch To Earn"
                   android:icon="@mipmap/ic_launcher"
                   android:roundIcon="@mipmap/ic_launcher_round"
                   android:supportsRtl="true"
+                  android:usesCleartextTraffic="true"
                   android:theme="@android:style/Theme.NoTitleBar"
                   android:hardwareAccelerated="true">
-
                   <activity
                       android:name=".MainActivity"
                       android:icon="@mipmap/ic_launcher"
                       android:roundIcon="@mipmap/ic_launcher_round"
                       android:exported="true"
                       android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|screenLayout">
-
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
                           <category android:name="android.intent.category.LAUNCHER" />
                       </intent-filter>
-
                   </activity>
-
               </application>
-
           </manifest>
           EOF
 
           cat > app/src/main/java/com/watchtoearn/app/MainActivity.java <<'EOF'
           package com.watchtoearn.app;
 
+          import android.annotation.SuppressLint;
           import android.app.Activity;
+          import android.app.Dialog;
           import android.content.Intent;
+          import android.graphics.Color;
           import android.net.Uri;
+          import android.net.http.SslError;
           import android.os.Bundle;
+          import android.os.CountDownTimer;
+          import android.os.Message;
           import android.util.TypedValue;
           import android.view.Gravity;
+          import android.view.View;
+          import android.view.Window;
+          import android.webkit.CookieManager;
           import android.webkit.JavascriptInterface;
+          import android.webkit.SslErrorHandler;
           import android.webkit.WebChromeClient;
+          import android.webkit.WebResourceRequest;
+          import android.webkit.WebResourceResponse;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
+          import android.widget.Button;
           import android.widget.FrameLayout;
-          import android.widget.Toast;
-
-          import com.unity3d.ads.IUnityAdsInitializationListener;
-          import com.unity3d.ads.IUnityAdsLoadListener;
-          import com.unity3d.ads.IUnityAdsShowListener;
-          import com.unity3d.ads.UnityAds;
-          import com.unity3d.ads.UnityAdsShowOptions;
-          import com.unity3d.services.banners.BannerErrorInfo;
-          import com.unity3d.services.banners.BannerView;
-          import com.unity3d.services.banners.UnityBannerSize;
+          import android.widget.LinearLayout;
+          import android.widget.TextView;
+          import androidx.webkit.WebViewAssetLoader;
+          import java.util.Random;
 
           public class MainActivity extends Activity {
-
-              private WebView webView;
-              private BannerView bottomBanner;
-              private FrameLayout root;
-
-              private static final String UNITY_GAME_ID = "800377040";
-              private static final boolean TEST_MODE = false;
-
-              private static final String BANNER_PLACEMENT = "BP_Banner_Android";
-              private static final String REWARDED_PLACEMENT = "BP_Rewarded_Android";
-              private static final String INTERSTITIAL_PLACEMENT = "BP_Interstitial_Android";
-
-              private boolean isRewardedLoaded = false;
-              private boolean isInterstitialLoaded = false;
+              private WebView mainWebView;
+              private Dialog adDialog;
+              private WebView adWebView;
+              private WebViewAssetLoader assetLoader;
+              private static final String BASE_AD_URL = "https://omg10.com/4/11903025";
+              private final Random random = new Random();
 
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
+                  FrameLayout root = new FrameLayout(this);
 
-                  root = new FrameLayout(this);
+                  assetLoader = new WebViewAssetLoader.Builder()
+                          .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+                          .build();
 
-                  webView = new WebView(this);
-                  WebSettings settings = webView.getSettings();
-                  settings.setJavaScriptEnabled(true);
-                  settings.setDomStorageEnabled(true);
-                  settings.setDatabaseEnabled(true);
-                  settings.setAllowFileAccess(true);
-                  settings.setAllowContentAccess(true);
+                  mainWebView = new WebView(this);
+                  setupWeb(mainWebView, false);
+                  mainWebView.setWebViewClient(new InAppWebClient(false));
+                  mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
+                  
+                  // Local secure route (Fixes file:// ERR_INVALID_URL)
+                  mainWebView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
 
-                  webView.setWebChromeClient(new WebChromeClient());
-                  webView.setWebViewClient(new WebViewClient() {
+                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 54, getResources().getDisplayMetrics());
+                  FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
+                  wp.bottomMargin = bHeight;
+                  root.addView(mainWebView, wp);
+
+                  LinearLayout banner = new LinearLayout(this);
+                  banner.setBackgroundColor(Color.parseColor("#111827"));
+                  banner.setGravity(Gravity.CENTER_VERTICAL);
+                  banner.setPadding(24, 0, 24, 0);
+
+                  TextView badge = new TextView(this);
+                  badge.setText("AD");
+                  badge.setTextColor(Color.BLACK);
+                  badge.setBackgroundColor(Color.parseColor("#F59E0B"));
+                  badge.setPadding(10, 4, 10, 4);
+                  badge.setTextSize(11);
+                  banner.addView(badge);
+
+                  TextView bTxt = new TextView(this);
+                  bTxt.setText("Special Sponsored Reward Offers");
+                  bTxt.setTextColor(Color.WHITE);
+                  bTxt.setTextSize(13);
+                  bTxt.setPadding(16, 0, 0, 0);
+                  banner.addView(bTxt, new LinearLayout.LayoutParams(0, -2, 1.0f));
+
+                  Button bBtn = new Button(this);
+                  bBtn.setText("OPEN");
+                  bBtn.setTextSize(11);
+                  bBtn.setTextColor(Color.WHITE);
+                  bBtn.setBackgroundColor(Color.parseColor("#7C3AED"));
+                  banner.addView(bBtn);
+
+                  View.OnClickListener bClick = v -> showAd(false);
+                  banner.setOnClickListener(bClick);
+                  bBtn.setOnClickListener(bClick);
+
+                  FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
+                  bp.gravity = Gravity.BOTTOM;
+                  root.addView(banner, bp);
+
+                  setContentView(root);
+              }
+
+              @SuppressLint("SetJavaScriptEnabled")
+              private void setupWeb(WebView wv, boolean isDialogAd) {
+                  WebSettings s = wv.getSettings();
+                  s.setJavaScriptEnabled(true);
+                  s.setDomStorageEnabled(true);
+                  s.setDatabaseEnabled(true);
+                  s.setAllowFileAccess(true);
+                  s.setAllowContentAccess(true);
+                  s.setSupportMultipleWindows(true);
+                  s.setJavaScriptCanOpenWindowsAutomatically(true);
+                  s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+                  s.setUserAgentString("Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36");
+
+                  wv.setWebChromeClient(new WebChromeClient() {
                       @Override
-                      public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                          if (url.startsWith("whatsapp:")
-                                  || url.contains("api.whatsapp.com")
-                                  || url.startsWith("intent:")) {
-                              try {
-                                  Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                                  startActivity(intent);
+                      public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                          if (!isDialogAd) {
+                              showAd(false);
+                              if (adWebView != null) {
+                                  WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                                  transport.setWebView(adWebView);
+                                  resultMsg.sendToTarget();
                                   return true;
-                              } catch (Exception e) {
-                                  return false;
                               }
                           }
                           return false;
                       }
                   });
-
-                  webView.addJavascriptInterface(new AdBridge(), "AndroidAd");
-                  webView.loadUrl("file:///android_asset/index.html");
-
-                  int bannerHeightPx = (int) TypedValue.applyDimension(
-                          TypedValue.COMPLEX_UNIT_DIP,
-                          50,
-                          getResources().getDisplayMetrics()
-                  );
-
-                  FrameLayout.LayoutParams webParams = new FrameLayout.LayoutParams(
-                          FrameLayout.LayoutParams.MATCH_PARENT,
-                          FrameLayout.LayoutParams.MATCH_PARENT
-                  );
-                  webParams.bottomMargin = bannerHeightPx;
-                  root.addView(webView, webParams);
-
-                  setContentView(root);
-
-                  initUnityAds();
               }
 
-              private void initUnityAds() {
-                  UnityAds.initialize(this, UNITY_GAME_ID, TEST_MODE, new IUnityAdsInitializationListener() {
-                      @Override
-                      public void onInitializationComplete() {
-                          runOnUiThread(() -> {
-                              loadRewardedAd();
-                              loadInterstitialAd();
-                              loadBannerAd();
-                          });
+              private class InAppWebClient extends WebViewClient {
+                  private final boolean isAdView;
+
+                  public InAppWebClient(boolean isAdView) {
+                      this.isAdView = isAdView;
+                  }
+
+                  @Override
+                  public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                      if (!isAdView && assetLoader != null) {
+                          WebResourceResponse response = assetLoader.shouldInterceptRequest(request.getUrl());
+                          if (response != null) return response;
+                      }
+                      return super.shouldInterceptRequest(view, request);
+                  }
+
+                  @Override
+                  public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                      if (url == null) return false;
+
+                      if (url.startsWith("file://") && !url.contains("android_asset")) {
+                          view.loadUrl(url.replace("file://", "https://"));
+                          return true;
                       }
 
-                      @Override
-                      public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) {
-                          runOnUiThread(() -> 
-                              Toast.makeText(MainActivity.this, "Unity init failed: " + message, Toast.LENGTH_SHORT).show()
-                          );
-                      }
-                  });
-              }
-
-              private void loadBannerAd() {
-                  runOnUiThread(() -> {
-                      if (bottomBanner != null) {
-                          root.removeView(bottomBanner);
-                          bottomBanner.destroy();
+                      if (url.startsWith("intent://")) {
+                          try {
+                              Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                              if (intent != null) {
+                                  String fallback = intent.getStringExtra("browser_fallback_url");
+                                  if (fallback != null) {
+                                      view.loadUrl(fallback);
+                                      return true;
+                                  }
+                              }
+                          } catch (Exception ignored) {}
+                          return true;
                       }
 
-                      bottomBanner = new BannerView(MainActivity.this, BANNER_PLACEMENT, new UnityBannerSize(320, 50));
-                      bottomBanner.setListener(new BannerView.IListener() {
-                          @Override
-                          public void onBannerLoaded(BannerView bannerAdView) {}
-
-                          @Override
-                          public void onBannerShown(BannerView bannerAdView) {}
-
-                          @Override
-                          public void onBannerClick(BannerView bannerAdView) {}
-
-                          @Override
-                          public void onBannerFailedToLoad(BannerView bannerAdView, BannerErrorInfo errorInfo) {}
-
-                          @Override
-                          public void onBannerLeftApplication(BannerView bannerView) {}
-                      });
-
-                      FrameLayout.LayoutParams bannerParams = new FrameLayout.LayoutParams(
-                              FrameLayout.LayoutParams.MATCH_PARENT,
-                              FrameLayout.LayoutParams.WRAP_CONTENT
-                      );
-                      bannerParams.gravity = Gravity.BOTTOM;
-                      root.addView(bottomBanner, bannerParams);
-                      bottomBanner.load();
-                  });
-              }
-
-              private void loadRewardedAd() {
-                  UnityAds.load(REWARDED_PLACEMENT, new IUnityAdsLoadListener() {
-                      @Override
-                      public void onUnityAdsAdLoaded(String placementId) {
-                          isRewardedLoaded = true;
+                      if (url.startsWith("http://") || url.startsWith("https://")) {
+                          view.loadUrl(url);
+                          return true;
                       }
 
-                      @Override
-                      public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) {
-                          isRewardedLoaded = false;
-                      }
-                  });
-              }
+                      return false;
+                  }
 
-              private void loadInterstitialAd() {
-                  UnityAds.load(INTERSTITIAL_PLACEMENT, new IUnityAdsLoadListener() {
-                      @Override
-                      public void onUnityAdsAdLoaded(String placementId) {
-                          isInterstitialLoaded = true;
-                      }
-
-                      @Override
-                      public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) {
-                          isInterstitialLoaded = false;
-                      }
-                  });
+                  @Override
+                  public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                      handler.proceed();
+                  }
               }
 
               public class AdBridge {
                   @JavascriptInterface
-                  public void showRewarded() {
-                      runOnUiThread(() -> {
-                          if (isRewardedLoaded) {
-                              showUnityRewarded();
-                          } else {
-                              Toast.makeText(MainActivity.this, "Loading ad... Please wait", Toast.LENGTH_SHORT).show();
-                              loadRewardedAd();
-                          }
-                      });
-                  }
-
+                  public void showRewarded() { runOnUiThread(() -> showAd(true)); }
                   @JavascriptInterface
-                  public void showInterstitial() {
-                      runOnUiThread(() -> {
-                          if (isInterstitialLoaded) {
-                              UnityAds.show(MainActivity.this, INTERSTITIAL_PLACEMENT, new UnityAdsShowOptions(), null);
-                              isInterstitialLoaded = false;
-                              loadInterstitialAd();
-                          } else {
-                              loadInterstitialAd();
-                          }
-                      });
-                  }
+                  public void showInterstitial() { runOnUiThread(() -> showAd(true)); }
               }
 
-              private void showUnityRewarded() {
-                  UnityAds.show(MainActivity.this, REWARDED_PLACEMENT, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
+              private void showAd(boolean reward) {
+                  if (isFinishing()) return;
+                  if (adDialog != null && adDialog.isShowing()) return;
+
+                  adDialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+                  adDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                  adDialog.setCancelable(false);
+
+                  LinearLayout l = new LinearLayout(this);
+                  l.setOrientation(LinearLayout.VERTICAL);
+
+                  LinearLayout tb = new LinearLayout(this);
+                  tb.setGravity(Gravity.CENTER_VERTICAL);
+                  tb.setBackgroundColor(Color.parseColor("#1F2937"));
+                  tb.setPadding(20, 16, 20, 16);
+
+                  TextView tt = new TextView(this);
+                  tt.setTextColor(Color.parseColor("#FBBF24"));
+                  tt.setTextSize(15);
+                  tt.setText("Reward in: 30s");
+                  tb.addView(tt, new LinearLayout.LayoutParams(0, -2, 1.0f));
+
+                  Button cb = new Button(this);
+                  cb.setText("✖ Close");
+                  cb.setTextColor(Color.WHITE);
+                  cb.setBackgroundColor(Color.parseColor("#EF4444"));
+                  cb.setVisibility(View.GONE);
+                  tb.addView(cb);
+                  l.addView(tb);
+
+                  adWebView = new WebView(this);
+                  setupWeb(adWebView, true);
+                  adWebView.setWebViewClient(new InAppWebClient(true));
+
+                  // Clear session and cookies to fetch fresh offers
+                  adWebView.clearCache(true);
+                  adWebView.clearHistory();
+                  CookieManager.getInstance().removeAllCookies(null);
+                  CookieManager.getInstance().flush();
+
+                  // Dynamic query parameter rotation
+                  long seed = System.currentTimeMillis() + random.nextInt(999999);
+                  String freshAdUrl = BASE_AD_URL + "?sub=" + seed + "&rand=" + seed;
+                  adWebView.loadUrl(freshAdUrl);
+
+                  l.addView(adWebView, new LinearLayout.LayoutParams(-1, 0, 1.0f));
+
+                  adDialog.setContentView(l);
+                  adDialog.show();
+
+                  new CountDownTimer(30000, 1000) {
                       @Override
-                      public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
-                          isRewardedLoaded = false;
-                          runOnUiThread(() -> 
-                              Toast.makeText(MainActivity.this, "Ad failed: " + message, Toast.LENGTH_SHORT).show()
-                          );
-                          loadRewardedAd();
+                      public void onTick(long m) {
+                          tt.setText("Reward in: " + (m / 1000 + 1) + "s");
                       }
-
                       @Override
-                      public void onUnityAdsShowStart(String placementId) {}
+                      public void onFinish() {
+                          tt.setText("🎉 Completed!");
+                          cb.setVisibility(View.VISIBLE);
+                      }
+                  }.start();
 
-                      @Override
-                      public void onUnityAdsShowClick(String placementId) {}
-
-                      @Override
-                      public void onUnityAdsShowComplete(String placementId, UnityAds.UnityAdsShowCompletionState state) {
-                          isRewardedLoaded = false;
-                          loadRewardedAd();
-                          if (state == UnityAds.UnityAdsShowCompletionState.COMPLETED) {
-                              triggerRewardInWeb();
+                  cb.setOnClickListener(v -> {
+                      if (adDialog != null && adDialog.isShowing()) {
+                          if (adWebView != null) {
+                              adWebView.loadUrl("about:blank");
+                              adWebView.destroy();
+                              adWebView = null;
                           }
+                          adDialog.dismiss();
+                      }
+                      if (reward && mainWebView != null) {
+                          mainWebView.post(() -> mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();} else if(typeof userCoins !== 'undefined'){userCoins+=10; if(typeof updateCoinDisplay==='function'){updateCoinDisplay();}}", null));
                       }
                   });
               }
 
-              private void triggerRewardInWeb() {
-                  if (webView != null) {
-                      webView.post(() ->
-                              webView.evaluateJavascript(
-                                      "if(window.adMobRewardEarned){window.adMobRewardEarned();}",
-                                      null
-                              )
-                      );
-                  }
-              }
-
               @Override
               protected void onDestroy() {
-                  if (bottomBanner != null) {
-                      bottomBanner.destroy();
-                  }
-                  if (webView != null) {
-                      webView.destroy();
-                  }
+                  if (adDialog != null && adDialog.isShowing()) adDialog.dismiss();
+                  if (adWebView != null) adWebView.destroy();
+                  if (mainWebView != null) mainWebView.destroy();
                   super.onDestroy();
               }
 
               @Override
               public void onBackPressed() {
-                  if (webView != null && webView.canGoBack()) {
-                      webView.goBack();
-                  } else {
-                      super.onBackPressed();
-                  }
+                  if (adDialog != null && adDialog.isShowing()) return;
+                  if (mainWebView != null && mainWebView.canGoBack()) mainWebView.goBack();
+                  else super.onBackPressed();
               }
           }
           EOF
