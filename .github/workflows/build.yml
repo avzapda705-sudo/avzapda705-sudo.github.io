@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 68
-                  versionName "8.4"
+                  versionCode 70
+                  versionName "8.6"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -288,7 +288,7 @@ jobs:
                   // Preload video ad immediately in background
                   preloadVideoAd();
 
-                  // 30-Second Banner Auto-Refresh Loop (Clean reload without cache destruction)
+                  // 30-Second Banner Auto-Refresh Loop (Clean reload without cache clearing)
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
@@ -600,8 +600,9 @@ jobs:
                       public void onTick(long m) {
                           tt.setText("Reward in: " + (m / 1000 + 1) + "s");
                       }
+
                       @Override
-                      public void软onFinish() {
+                      public void onFinish() {
                           tt.setText("🎉 Reward Ready!");
                           cb.setVisibility(View.VISIBLE);
                       }
