@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 67
-                  versionName "8.3"
+                  versionCode 68
+                  versionName "8.4"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -238,7 +238,7 @@ jobs:
 
                   // Real Monetag Live Banner Strip (Centered at Bottom)
                   bannerWebView = new WebView(this);
-                  setupWeb(bannerWebView, true);
+                  setupWeb(bannerWebView, false);
                   bannerWebView.getSettings().setLoadWithOverviewMode(true);
                   bannerWebView.getSettings().setUseWideViewPort(true);
                   bannerWebView.setHorizontalScrollBarEnabled(false);
@@ -288,14 +288,12 @@ jobs:
                   // Preload video ad immediately in background
                   preloadVideoAd();
 
-                  // 30-Second Banner Auto-Refresh Loop with Cache-Buster
+                  // 30-Second Banner Auto-Refresh Loop (Clean reload without cache destruction)
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
                           if (!isFinishing() && bannerWebView != null) {
-                              bannerWebView.clearCache(true);
-                              String refreshUrl = AD_URL + (AD_URL.contains("?") ? "&" : "?") + "cb=" + System.currentTimeMillis();
-                              bannerWebView.loadUrl(refreshUrl);
+                              bannerWebView.reload();
                           }
                           handler.postDelayed(this, 30000);
                       }
@@ -603,7 +601,7 @@ jobs:
                           tt.setText("Reward in: " + (m / 1000 + 1) + "s");
                       }
                       @Override
-                      public void onFinish() {
+                      public void软onFinish() {
                           tt.setText("🎉 Reward Ready!");
                           cb.setVisibility(View.VISIBLE);
                       }
