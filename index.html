@@ -679,7 +679,7 @@ var FIREBASE_DB_URL = "https://watchtoearn-4862d-default-rtdb.firebaseio.com/wit
 var SUPPORT_EMAIL = "help.watchtoearn@gmail.com";
 
 /* ==============================================
-   WEB AUDIO API SOUND GENERATOR & HAPTICS
+   PRECISION MECHANICAL WHEEL AUDIO & HAPTIC
    ============================================== */
 var audioCtx = null;
 function getAudioContext(){
@@ -695,51 +695,55 @@ function getAudioContext(){
   return audioCtx;
 }
 
-// Realistic Wheel Tick Sound
-function playTickSound(){
+// Ultra-sharp Casino Peg Tick Sound
+function playMechanicalTick(){
   try{
     var ctx = getAudioContext();
     if(!ctx) return;
     var osc = ctx.createOscillator();
     var gain = ctx.createGain();
+    
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(650, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.04);
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.04);
+    osc.frequency.setValueAtTime(820, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.022);
+    
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.022);
+    
     osc.connect(gain);
     gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.04);
+    
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.022);
   }catch(e){}
 }
 
-// Rewarded Win Chime (Ding-Ding)
+// Victory Win Chime (Ding-Ding-Ding)
 function playWinSound(){
   try{
     var ctx = getAudioContext();
     if(!ctx) return;
-    [523.25, 659.25, 783.99, 1046.50].forEach(function(freq, i){
+    [587.33, 739.99, 880, 1174.66].forEach(function(freq, i){
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.value = freq;
-      var startTime = ctx.currentTime + (i * 0.09);
+      var startTime = ctx.currentTime + (i * 0.08);
       gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
+      gain.gain.linearRampToValueAtTime(0.28, startTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(startTime);
-      osc.stop(startTime + 0.36);
+      osc.stop(startTime + 0.48);
     });
   }catch(e){}
 }
 
-// Haptic Vibrate Helper
-function haptic(ms){
-  if(navigator && typeof navigator.vibrate === 'function'){
-    try{ navigator.vibrate(ms); }catch(e){}
+// Sharp Android Haptic Vibrate
+function triggerHaptic(pattern){
+  if(window.navigator && typeof window.navigator.vibrate === 'function'){
+    try{ window.navigator.vibrate(pattern); }catch(e){}
   }
 }
 
@@ -748,7 +752,6 @@ function haptic(ms){
    ============================================== */
 function applyAutoTheme(){
   var hr = new Date().getHours();
-  // Day mode from 6:00 AM to 6:59 PM (06 to 18), Night mode otherwise
   var isDay = (hr >= 6 && hr < 19);
   if(isDay){
     document.body.classList.add('theme-light');
@@ -993,7 +996,7 @@ ctx.fillText('SPIN',cx,cy+8);
    ===================================== */
 
 window.triggerAdMob=function(type){
-getAudioContext(); // Resume audio context on user interaction
+getAudioContext();
 if(type==='watch'){
 if(watchAdsUsed()>=MAX_DAILY_ADS){
 toast('Daily limit reached! Come back tomorrow.');
@@ -1025,7 +1028,6 @@ localStorage.setItem('wte_watch_count', String(used));
 
 balance+=10;
 saveBalance();
-haptic(50);
 playWinSound();
 $('videoText').textContent='✅ Completed +10 coins';
 toast('🎉 +10 Coins Added!');
@@ -1042,7 +1044,6 @@ balance+=n;
 saveBalance();
 localStorage.setItem('wte_bonus_date',day());
 checkBonusState();
-haptic([50, 50, 80]);
 playWinSound();
 toast('🎁 Daily Bonus +'+n+' Coins!');
 }
@@ -1069,39 +1070,52 @@ triggerAdMob('spin');
 };
 
 function doSpin(){
-spinning=true;
-localStorage.setItem('wte_spin_count',String(spinUsed()+1));
-updateSpin();
-haptic(40);
+  spinning = true;
+  localStorage.setItem('wte_spin_count', String(spinUsed() + 1));
+  updateSpin();
 
-var reward=weighted();
-var index=rewards.findIndex(function(x){return x.coins===reward.coins;});
-var target=360*6-36-index*72;
+  var reward = weighted();
+  var index = rewards.findIndex(function(x){ return x.coins === reward.coins; });
+  var target = 360 * 6 - 36 - index * 72;
 
-rotation+=target-(rotation%360);
-$('wheel').style.transform='rotate('+rotation+'deg)';
+  rotation += target - (rotation % 360);
+  $('wheel').style.transform = 'rotate(' + rotation + 'deg)';
 
-// Dynamic Realistic Tick Sound Animation
-var tickCount = 0;
-var totalTicks = 26;
-function scheduleNextTick(){
-  if(tickCount >= totalTicks || !spinning) return;
-  playTickSound();
-  tickCount++;
-  var delay = 80 + Math.pow(tickCount / totalTicks, 2.2) * 380;
-  setTimeout(scheduleNextTick, delay);
-}
-scheduleNextTick();
+  // Cubic-Bezier Synchronized Spin Physics (4.2 seconds)
+  var totalDuration = 4200;
+  var startTime = Date.now();
+  var lastTickSector = -1;
 
-setTimeout(function(){
-balance+=reward.coins;
-saveBalance();
-haptic([60, 50, 100]);
-playWinSound();
-toast('🎉 You won '+reward.coins+' coins!');
-spinning=false;
-updateSpin();
-},4300);
+  function runPhysicsLoop(){
+    if(!spinning) return;
+    var elapsed = Date.now() - startTime;
+    if(elapsed >= totalDuration) return;
+
+    var progress = elapsed / totalDuration;
+    // Ease-out timing matching CSS cubic-bezier(.15,.7,.15,1)
+    var ease = 1 - Math.pow(1 - progress, 3.2);
+    var currentAngle = ease * target;
+    var currentSector = Math.floor(currentAngle / 72);
+
+    if(currentSector !== lastTickSector){
+      lastTickSector = currentSector;
+      playMechanicalTick();
+      triggerHaptic(22); // Sharp mechanical gear haptic
+    }
+
+    requestAnimationFrame(runPhysicsLoop);
+  }
+  requestAnimationFrame(runPhysicsLoop);
+
+  setTimeout(function(){
+    balance += reward.coins;
+    saveBalance();
+    playWinSound();
+    triggerHaptic([50, 60, 100]); // Final victory pulse
+    toast('🎉 You won ' + reward.coins + ' coins!');
+    spinning = false;
+    updateSpin();
+  }, totalDuration + 100);
 }
 
 /* ==============================================
@@ -1207,7 +1221,6 @@ fetch(FIREBASE_DB_URL + ".json")
     var keys = Object.keys(data);
     if(!keys.length) return;
     
-    // Sort latest first
     keys.sort().reverse();
     var latest = keys.slice(0, 8);
     var tickerItems = [];
