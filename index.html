@@ -209,11 +209,12 @@ border:1.5px dashed #8738d4;
 border-radius:16px;
 padding:12px 16px;
 margin:14px 0;
-font-size:16px;
+font-size:15px;
 color:#5b1e9c;
 display:flex;
-justify-content:space-between;
-align-items:center;
+flex-direction:column;
+align-items:flex-start;
+gap:6px;
 font-weight:bold
 }
 .support-card{
@@ -367,9 +368,10 @@ Watch a sponsored ad before each spin.
 Instant UPI Transfer • Minimum 200 coins required.
 </div>
 
+<!-- SUPER CASHOUT RATE BADGE -->
 <div class="rate-badge">
-<span>💎 Conversion Rate:</span>
-<span>200 Coins = ₹1</span>
+  <div style="font-size:14px;color:#4b1f84">💎 <b>Regular Cashout:</b> 200 Coins = ₹1</div>
+  <div style="font-size:14px;color:#d97706">⚡ <b>Super Cashout:</b> 1,000 Coins = ₹10 (Double Benefit!)</div>
 </div>
 
 <div style="
@@ -452,7 +454,7 @@ onclick="saveProfile()">
 <div class="support-card">
 <h3 style="margin-top:0;font-size:20px;color:#4a1584">ℹ️ App Info & Support</h3>
 <div class="faq-item">
-<b>• Conversion Rate:</b> 200 Coins = ₹1. Withdraw anytime once you hit 200 coins.
+<b>• Conversion Rate:</b> 200 Coins = ₹1. Special Bonus: 1,000 Coins = ₹10.
 </div>
 <div class="faq-item">
 <b>• Payout Speed:</b> Payments are processed directly to your registered UPI ID daily.
@@ -813,8 +815,17 @@ toast('Insufficient balance');
 return;
 }
 
-/* Conversion: 200 coins = ₹1 */
-var inrAmount = (amount / 200).toFixed(2).replace(/\.00$/, '');
+/* Smart Multi-Tier Payout: 1,000 Coins = ₹10 (Super Cashout) & Remainder @ 200 Coins = ₹1 */
+var inrAmount;
+if (amount >= 1000) {
+  var superUnits = Math.floor(amount / 1000);
+  var remainingCoins = amount % 1000;
+  var superInr = superUnits * 10;
+  var regularInr = remainingCoins / 200;
+  inrAmount = (superInr + regularInr).toFixed(2).replace(/\.00$/, '');
+} else {
+  inrAmount = (amount / 200).toFixed(2).replace(/\.00$/, '');
+}
 
 balance-=amount;
 saveBalance();
