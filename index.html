@@ -16,14 +16,14 @@
   --bg-color: #0b0f19;
   --text-main: #f1f5f9;
   --text-muted: #94a3b8;
-  --topbar-bg: rgba(11,15,25,0.85);
+  --topbar-bg: rgba(11,15,25,0.92);
   --card-bg: linear-gradient(165deg,#161e31,#0f172a);
   --card-border: rgba(255,255,255,0.07);
   --card-shadow: 0 12px 30px rgba(0,0,0,0.45);
   --input-bg: #0b0f19;
   --input-border: rgba(255,255,255,0.1);
-  --nav-bg: rgba(11,15,25,0.96);
-  --nav-border: rgba(255,255,255,0.1);
+  --nav-bg: #0b0f19;
+  --nav-border: rgba(255,255,255,0.12);
   --ticker-bg: rgba(15,23,42,0.8);
   --ticker-border: rgba(255,255,255,0.08);
   --box-bg: #0b0f19;
@@ -41,13 +41,13 @@ body.theme-light {
   --bg-color: #f4f6fb;
   --text-main: #0f172a;
   --text-muted: #64748b;
-  --topbar-bg: rgba(255,255,255,0.88);
+  --topbar-bg: rgba(255,255,255,0.95);
   --card-bg: #ffffff;
   --card-border: #e2e8f0;
   --card-shadow: 0 8px 24px rgba(15,23,42,0.05);
   --input-bg: #f8fafc;
   --input-border: #cbd5e1;
-  --nav-bg: rgba(255,255,255,0.96);
+  --nav-bg: #ffffff;
   --nav-border: #e2e8f0;
   --ticker-bg: #0f172a;
   --ticker-border: transparent;
@@ -67,7 +67,7 @@ margin:0;
 font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 background:var(--bg-color);
 color:var(--text-main);
-padding-bottom:105px;
+padding-bottom:140px; /* ક્લિયર સ્પેસ જેથી કાર્ડ ક્યારેય અડે નહીં */
 letter-spacing:-0.2px;
 transition:background .3s ease, color .3s ease
 }
@@ -126,11 +126,12 @@ h2{margin:0 0 6px;font-size:20px;font-weight:800;color:var(--text-main);letter-s
 
 /* MYSTERY SURPRISE BOX SPECIAL CARD */
 .surprise-box-card {
-background: linear-gradient(135deg, rgba(30,27,75,0.85), rgba(76,29,149,0.55));
+background: linear-gradient(135deg, rgba(30,27,75,0.95), rgba(76,29,149,0.7));
 border: 1.5px solid rgba(168,85,247,0.45);
 box-shadow: 0 12px 30px rgba(126,34,206,0.22);
 position: relative;
 overflow: hidden;
+margin-bottom: 20px;
 }
 .surprise-box-glow {
 position: absolute;
@@ -381,7 +382,7 @@ margin-top:18px
 .toast{
 position:fixed;
 left:50%;
-bottom:105px;
+bottom:110px;
 transform:translateX(-50%);
 background:var(--toast-bg);
 color:var(--toast-color);
@@ -395,7 +396,7 @@ box-shadow:0 10px 30px rgba(0,0,0,0.3)
 }
 
 /* ==============================================
-   REFINED & PROMINENT BOTTOM NAVIGATION BAR
+   CLEAN SEPARATED BOTTOM NAVIGATION DOCK
    ============================================== */
 .nav{
 position:fixed;
@@ -403,17 +404,14 @@ bottom:0;
 left:0;
 right:0;
 background:var(--nav-bg);
-backdrop-filter:blur(24px);
--webkit-backdrop-filter:blur(24px);
 display:flex;
 justify-content:space-around;
 align-items:center;
-padding:8px 4px calc(env(safe-area-inset-bottom, 0px) + 8px);
-border-top:1px solid var(--nav-border);
+padding:10px 4px calc(env(safe-area-inset-bottom, 0px) + 8px);
+border-top:1.5px solid var(--nav-border);
 z-index:90;
-box-shadow:0 -6px 20px rgba(0,0,0,0.3);
-transition:background .3s ease;
-height:68px;
+box-shadow:0 -8px 24px rgba(0,0,0,0.65);
+height:70px;
 }
 .nav button{
 background:none;
@@ -435,7 +433,7 @@ transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .nav button b{
 font-size:23px;
-line-height:1.1;
+line-height:1;
 display:block;
 transition:transform .2s ease, filter .2s ease;
 }
@@ -447,13 +445,13 @@ color:#c084fc;
 font-weight:900;
 }
 .nav button.nav-active b{
-transform:translateY(-2px) scale(1.15);
+transform:translateY(-2px) scale(1.12);
 filter:drop-shadow(0 0 10px rgba(192,132,252,0.65));
 }
 .nav button.nav-active::after{
 content:'';
 position:absolute;
-bottom:-2px;
+bottom:-3px;
 width:18px;
 height:3.5px;
 background:linear-gradient(90deg,#8b5cf6,#d946ef);
@@ -696,9 +694,7 @@ style="margin-top:16px;background:linear-gradient(135deg,#059669,#10b981,#34d399
 </button>
 </div>
 
-<!-- ==============================================
-     NEW: MYSTERY SURPRISE BOX (30 MIN COOLDOWN)
-     ============================================== -->
+<!-- NEW: MYSTERY SURPRISE BOX (30 MIN COOLDOWN) -->
 <div class="card surprise-box-card">
 <div class="surprise-box-glow"></div>
 <div style="display:flex;align-items:center;justify-content:space-between">
@@ -718,45 +714,6 @@ style="margin-top:16px;background:linear-gradient(135deg,#f59e0b,#d946ef,#8b5cf6
 </button>
 </div>
 
-</section>
-
-
-<!-- =========================
-     PAGE: EARN
-     ========================= -->
-<section id="earn" class="page">
-<div class="card">
-<h2>💎 Coin Rewards</h2>
-<div class="muted">
-Earn coins by watching high-reward video ads, surprise boxes and claiming daily rewards.
-</div>
-
-<div class="row">
-<div class="stat">
-<strong>10 🪙</strong>
-<span>Per video ad</span>
-</div>
-<div class="stat">
-<strong>20–30 🪙</strong>
-<span>Daily bonus</span>
-</div>
-</div>
-
-<div class="row">
-<div class="stat">
-<strong>Up to 500 🪙</strong>
-<span>Surprise Box</span>
-</div>
-<div class="stat">
-<strong>5–50 🪙</strong>
-<span>Wheel Spin</span>
-</div>
-</div>
-
-<div class="notice">
-Ensure ads are watched completely to receive your coin rewards.
-</div>
-</div>
 </section>
 
 
@@ -799,6 +756,45 @@ style="background:linear-gradient(135deg,#ec4899,#f43f5e,#fb923c)">
 
 <div class="notice">
 Watch a sponsored ad before each spin.
+</div>
+</div>
+</section>
+
+
+<!-- =========================
+     PAGE: EARN
+     ========================= -->
+<section id="earn" class="page">
+<div class="card">
+<h2>💎 Coin Rewards</h2>
+<div class="muted">
+Earn coins by watching high-reward video ads, surprise boxes and claiming daily rewards.
+</div>
+
+<div class="row">
+<div class="stat">
+<strong>10 🪙</strong>
+<span>Per video ad</span>
+</div>
+<div class="stat">
+<strong>20–30 🪙</strong>
+<span>Daily bonus</span>
+</div>
+</div>
+
+<div class="row">
+<div class="stat">
+<strong>Up to 500 🪙</strong>
+<span>Surprise Box</span>
+</div>
+<div class="stat">
+<strong>5–50 🪙</strong>
+<span>Wheel Spin</span>
+</div>
+</div>
+
+<div class="notice">
+Ensure ads are watched completely to receive your coin rewards.
 </div>
 </div>
 </section>
@@ -946,18 +942,18 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
 </main>
 
 
-<!-- =========================
-     BOTTOM NAVIGATION BAR (ENHANCED)
-     ========================= -->
+<!-- ==============================================
+     BOTTOM NAVIGATION BAR (PERFECTED ORDER)
+     ============================================== -->
 <nav class="nav" id="bottomNav">
 <button class="nav-active" onclick="showPage('home')">
 <b>🏠</b>Home
 </button>
-<button onclick="showPage('earn')">
-<b>💎</b>Earn
-</button>
 <button onclick="showPage('spin')">
 <b>🎡</b>Spin
+</button>
+<button onclick="showPage('earn')">
+<b>💎</b>Earn
 </button>
 <button onclick="showPage('withdraw')">
 <b>💸</b>Withdraw
@@ -1268,16 +1264,12 @@ function checkSurpriseBoxState(){
 function calculateSurpriseReward(){
   var r = Math.random() * 100;
   if(r < 82){
-    // 82% Chance: 20 to 35 Coins (Most Common: 21, 25, 28, 33)
     return Math.floor(Math.random() * (35 - 20 + 1)) + 20;
   } else if(r < 95){
-    // 13% Chance: 12 to 19 Coins
     return Math.floor(Math.random() * (19 - 12 + 1)) + 12;
   } else if(r < 99.2){
-    // 4.2% Chance: 40 to 50 Coins (Lucky Surprise)
     return Math.floor(Math.random() * (50 - 40 + 1)) + 40;
   } else {
-    // 0.8% Rare Jackpot: 75 to 100 Coins (Never exceeds 100)
     return Math.floor(Math.random() * (100 - 75 + 1)) + 75;
   }
 }
@@ -1386,7 +1378,7 @@ if(p){
 p.classList.add('active');
 }
 
-// Highlight active navigation tab with glow effect
+// Highlight active navigation tab
 document.querySelectorAll('.nav button').forEach(function(btn){
   btn.classList.remove('nav-active');
   var onclickStr = btn.getAttribute('onclick') || '';
@@ -2250,7 +2242,7 @@ checkBonusState();
 checkSurpriseBoxState();
 checkUserAuth();
 
-// Default activate Home page styling on bottom navigation
+// Default activate Home
 showPage('home');
 
 $('profileName').value=localStorage.getItem('wte_name')||'';
