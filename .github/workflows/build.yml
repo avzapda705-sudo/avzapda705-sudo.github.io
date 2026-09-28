@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 64
-                  versionName "8.0"
+                  versionCode 65
+                  versionName "8.1"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -186,7 +186,6 @@ jobs:
           import android.view.View;
           import android.view.ViewGroup;
           import android.view.Window;
-          import android.webkit.CookieManager;
           import android.webkit.JavascriptInterface;
           import android.webkit.SslErrorHandler;
           import android.webkit.WebChromeClient;
@@ -205,7 +204,7 @@ jobs:
               private WebView preloadedVideoWebView;
               private Dialog adDialog;
               private CardView floatingCardAd;
-              private static final String VIDEO_AD_URL = "https://omg10.com/4/11903025";
+              private static final String AD_URL = "https://omg10.com/4/11903025";
               private final Handler handler = new Handler(Looper.getMainLooper());
               private boolean bannerUserClicked = false;
               private long lastVignetteTrigger = 0;
@@ -219,8 +218,6 @@ jobs:
 
                   mainWebView = new WebView(this);
                   setupWeb(mainWebView, false);
-                  mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
-
                   mainWebView.setWebViewClient(new SafeWebClient(false, false) {
                       @Override
                       public void onPageFinished(WebView view, String url) {
@@ -228,7 +225,7 @@ jobs:
                           hookShowPage(view);
                       }
                   });
-
+                  mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
                   int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 64, getResources().getDisplayMetrics());
@@ -236,7 +233,7 @@ jobs:
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
 
-                  // Live Bottom Banner
+                  // Real Monetag Live Banner Strip (Centered at Bottom)
                   bannerWebView = new WebView(this);
                   setupWeb(bannerWebView, true);
                   bannerWebView.getSettings().setLoadWithOverviewMode(true);
@@ -276,7 +273,7 @@ jobs:
                       return false;
                   });
 
-                  bannerWebView.loadUrl(VIDEO_AD_URL);
+                  bannerWebView.loadUrl(AD_URL);
 
                   FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
                   bp.gravity = Gravity.BOTTOM;
@@ -285,22 +282,23 @@ jobs:
                   buildCard(root);
                   setContentView(root);
 
+                  // Preload video ad immediately in background
                   preloadVideoAd();
 
-                  // 30-Sec Banner Refresh Loop
+                  // 30-Second Banner Auto-Refresh Loop with Cache-Buster
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
                           if (!isFinishing() && bannerWebView != null) {
                               bannerWebView.clearCache(true);
-                              String refreshUrl = VIDEO_AD_URL + (VIDEO_AD_URL.contains("?") ? "&" : "?") + "cb=" + System.currentTimeMillis();
+                              String refreshUrl = AD_URL + (AD_URL.contains("?") ? "&" : "?") + "cb=" + System.currentTimeMillis();
                               bannerWebView.loadUrl(refreshUrl);
                           }
                           handler.postDelayed(this, 30000);
                       }
                   }, 30000);
 
-                  // Floating Bonus Loop (Never on Login Screen)
+                  // Floating Bonus Card Loop (Only after user logs in)
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
@@ -323,7 +321,7 @@ jobs:
                   }, 8000);
               }
 
-              // Fast Hook for Earn, Withdraw, and Referral
+              // Pure hook: only trigger on earn, withdraw, referral
               private void hookShowPage(WebView view) {
                   view.evaluateJavascript(
                       "(function(){" +
@@ -335,7 +333,7 @@ jobs:
                       "    var auth = document.getElementById('authOverlay');" +
                       "    var isLoggedIn = !(auth && auth.style.display !== 'none');" +
                       "    if (isLoggedIn && ['earn', 'withdraw', 'referral'].includes(pageId)) {" +
-                      "      if (window.AndroidAd) { window.AndroidAd.triggerCleanVignette(); }" +
+                      "      if (window.AndroidAd) { window.AndroidAd.triggerTabAd(); }" +
                       "    }" +
                       "  };" +
                       "})();",
@@ -353,7 +351,7 @@ jobs:
                   setupWeb(preloadedVideoWebView, false);
                   preloadedVideoWebView.setBackgroundColor(Color.parseColor("#0b0f19"));
                   preloadedVideoWebView.setWebViewClient(new SafeWebClient(false, true));
-                  preloadedVideoWebView.loadUrl(VIDEO_AD_URL + (VIDEO_AD_URL.contains("?") ? "&" : "?") + "pw=" + System.currentTimeMillis());
+                  preloadedVideoWebView.loadUrl(AD_URL + (AD_URL.contains("?") ? "&" : "?") + "pw=" + System.currentTimeMillis());
               }
 
               private void buildCard(FrameLayout root) {
@@ -442,6 +440,7 @@ jobs:
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
+                      // Banner: open external browser only if manually touched
                       if (isBanner) {
                           if (bannerUserClicked && !url.contains("omg10.com") && (url.startsWith("http://") || url.startsWith("https://"))) {
                               try {
@@ -454,6 +453,7 @@ jobs:
                           return false;
                       }
 
+                      // Rewarded Video: Complete lockdown inside app dialog
                       if (isRewarded) {
                           if (url.startsWith("http://") || url.startsWith("https://")) {
                               view.loadUrl(url);
@@ -503,30 +503,26 @@ jobs:
               public class AdBridge {
                   @JavascriptInterface
                   public void showRewarded() { runOnUiThread(() -> showAd(true)); }
+                  @JavascriptInterface
+                  public void showInterstitial() { runOnUiThread(() -> showAd(true)); }
 
                   @JavascriptInterface
-                  public void triggerCleanVignette() {
+                  public void triggerTabAd() {
                       runOnUiThread(() -> {
                           long now = System.currentTimeMillis();
-                          if (now - lastVignetteTrigger >= 2500 && mainWebView != null) {
+                          if (now - lastVignetteTrigger >= 3000 && mainWebView != null) {
                               lastVignetteTrigger = now;
                               triggerCount++;
-
-                              // Rotate between zones to bypass per-zone frequency limits
                               final String zone = (triggerCount % 2 == 0) ? "11914715" : "11914761";
-                              final long sessionBuster = now;
-
-                              // Clear storage caps & inject dynamic fresh tag
                               mainWebView.evaluateJavascript(
                                   "(function(){" +
                                   "  try {" +
                                   "    var old = document.getElementById('mv_tag');" +
                                   "    if (old) old.remove();" +
-                                  "    sessionStorage.removeItem('__monetag_vg');" +
                                   "    var s = document.createElement('script');" +
                                   "    s.id = 'mv_tag';" +
                                   "    s.dataset.zone = '" + zone + "';" +
-                                  "    s.src = 'https://n6wxm.com/vignette.min.js?cb=' + " + sessionBuster + " + '&req=' + " + triggerCount + ";" +
+                                  "    s.src = 'https://n6wxm.com/vignette.min.js?cb=' + Date.now();" +
                                   "    document.head.appendChild(s);" +
                                   "  } catch(e) {}" +
                                   "})();",
@@ -548,7 +544,7 @@ jobs:
                   l.setOrientation(LinearLayout.VERTICAL);
                   l.setBackgroundColor(Color.parseColor("#0b0f19"));
 
-                  // Countdown Top Bar
+                  // Top Status Bar with Countdown
                   LinearLayout tb = new LinearLayout(this);
                   tb.setGravity(Gravity.CENTER_VERTICAL);
                   tb.setBackgroundColor(Color.parseColor("#1F2937"));
@@ -568,6 +564,7 @@ jobs:
                   tb.addView(cb);
                   l.addView(tb);
 
+                  // Use the preloaded ad view directly for instant display
                   final WebView activeAdView;
                   if (preloadedVideoWebView != null) {
                       activeAdView = preloadedVideoWebView;
@@ -577,7 +574,7 @@ jobs:
                       setupWeb(activeAdView, false);
                       activeAdView.setBackgroundColor(Color.parseColor("#0b0f19"));
                       activeAdView.setWebViewClient(new SafeWebClient(false, true));
-                      activeAdView.loadUrl(VIDEO_AD_URL);
+                      activeAdView.loadUrl(AD_URL);
                   }
 
                   if (activeAdView.getParent() != null) {
