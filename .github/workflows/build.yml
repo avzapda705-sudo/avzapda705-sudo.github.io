@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 71
-                  versionName "8.7"
+                  versionCode 72
+                  versionName "8.8"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -246,7 +246,7 @@ jobs:
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
-                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPUNIT_DIP, 64, getResources().getDisplayMetrics());
+                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 64, getResources().getDisplayMetrics());
                   FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
