@@ -411,6 +411,8 @@ var balance=Number(localStorage.getItem('wte_coins')||0);
 var rotation=0;
 var spinning=false;
 var pendingRewardType=null;
+var isWatchCooldown=false;
+var MAX_DAILY_ADS=100;
 
 function $(id){
 return document.getElementById(id);
@@ -453,6 +455,49 @@ saveBalance();
 function day(){
 var d=new Date();
 return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+}
+
+/* Background Daily Ads Tracking */
+function watchAdsUsed(){
+if(localStorage.getItem('wte_watch_date')!==day()){
+localStorage.setItem('wte_watch_date',day());
+localStorage.setItem('wte_watch_count','0');
+}
+return Number(localStorage.getItem('wte_watch_count')||0);
+}
+
+function updateWatchButtonState(){
+var btn=$('watchBtn');
+if(!btn) return;
+if(watchAdsUsed()>=MAX_DAILY_ADS){
+btn.disabled=true;
+btn.textContent='DAILY LIMIT REACHED';
+return;
+}
+if(!isWatchCooldown){
+btn.disabled=false;
+btn.textContent='▶ WATCH VIDEO AD';
+}
+}
+
+function startWatchCooldown(){
+isWatchCooldown=true;
+var btn=$('watchBtn');
+var sec=5;
+btn.disabled=true;
+btn.textContent='Next Ad in '+sec+'s...';
+
+var cdTimer=setInterval(function(){
+sec--;
+if(sec>0){
+btn.textContent='Next Ad in '+sec+'s...';
+}else{
+clearInterval(cdTimer);
+isWatchCooldown=false;
+updateWatchButtonState();
+$('videoText').textContent='Ready to Watch';
+}
+},1000);
 }
 
 function spinUsed(){
@@ -535,6 +580,16 @@ ctx.fillText('SPIN',cx,cy+8);
    ===================================== */
 
 window.triggerAdMob=function(type){
+if(type==='watch'){
+if(watchAdsUsed()>=MAX_DAILY_ADS){
+toast('Daily limit reached! Come back tomorrow.');
+return;
+}
+if(isWatchCooldown){
+return;
+}
+}
+
 pendingRewardType=type;
 
 if(window.AndroidAd && typeof window.AndroidAd.showRewarded==='function'){
@@ -551,10 +606,19 @@ window.adMobRewardEarned=function(){
 if(!pendingRewardType) return;
 
 if(pendingRewardType==='watch'){
+var used = watchAdsUsed() + 1;
+localStorage.setItem('wte_watch_count', String(used));
+
 balance+=10;
 saveBalance();
 $('videoText').textContent='✅ Completed +10 coins';
 toast('🎉 +10 Coins Added!');
+
+if(used >= MAX_DAILY_ADS){
+updateWatchButtonState();
+}else{
+startWatchCooldown();
+}
 }
 else if(pendingRewardType==='bonus'){
 var n=20+Math.floor(Math.random()*11);
@@ -805,6 +869,7 @@ saveBalance();
 drawWheel();
 updateSpin();
 updateRef();
+updateWatchButtonState();
 syncLiveStatuses();
 renderHistory();
 
