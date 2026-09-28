@@ -396,7 +396,7 @@ box-shadow:0 10px 30px rgba(0,0,0,0.3)
 }
 
 /* ==============================================
-   CLEAN SEPARATED BOTTOM NAVIGATION DOCK (FIXED LOW PROFILE)
+   CLEAN SEPARATED BOTTOM NAVIGATION DOCK (CENTERED & SPACED)
    ============================================== */
 .nav{
 position:fixed;
@@ -407,16 +407,16 @@ background:var(--nav-bg);
 display:flex;
 justify-content:space-around;
 align-items:center;
-padding:2px 4px calc(env(safe-area-inset-bottom, 0px) + 2px);
+padding:10px 4px calc(env(safe-area-inset-bottom, 0px) + 6px); /* Line thi niche utarva mate padding */
 border-top:1px solid var(--nav-border);
 z-index:90;
 box-shadow:0 -4px 16px rgba(0,0,0,0.5);
-height:56px;
+height:64px;
 }
 .nav button{
 background:none;
 border:0;
-font-size:11px;
+font-size:10.5px;
 color:var(--text-muted);
 font-weight:700;
 cursor:pointer;
@@ -424,15 +424,16 @@ display:flex;
 flex-direction:column;
 align-items:center;
 justify-content:center;
-gap:2px;
+gap:3px;
 flex:1;
-padding:2px 0;
+padding:0;
+margin-top:1px;
 border-radius:10px;
 position:relative;
 transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .nav button b{
-font-size:19px;
+font-size:18px;
 line-height:1;
 display:block;
 transition:transform .2s ease, filter .2s ease;
@@ -445,13 +446,13 @@ color:#c084fc;
 font-weight:900;
 }
 .nav button.nav-active b{
-transform:translateY(-1px) scale(1.08);
+transform:scale(1.1); /* Upar nahi chhadhe, soft highlight raheshe */
 filter:drop-shadow(0 0 8px rgba(192,132,252,0.6));
 }
 .nav button.nav-active::after{
 content:'';
 position:absolute;
-bottom:-1px;
+bottom:-4px;
 width:14px;
 height:3px;
 background:linear-gradient(90deg,#8b5cf6,#d946ef);
@@ -998,8 +999,8 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
           <circle cx="256" cy="256" r="244" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="6"/>
           <circle cx="256" cy="256" r="236" fill="none" stroke="rgba(129,140,248,0.25)" stroke-width="2"/>
           <path d="M165 145 C165 130 182 120 195 128 L345 228 C357 236 357 254 345 262 L195 362 C182 370 165 360 165 345 Z" fill="url(#topPlayGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="5"/>
-          <path d="M110 320 C110 405 210 455 315 440" fill="none" stroke="url(#authGoldGrad)" stroke-width="12" stroke-linecap="round" opacity="0.85"/>
-          <circle cx="340" cy="315" r="105" fill="url(#authGoldGrad)" stroke="#ffffff" stroke-width="6"/>
+          <path d="M110 320 C110 405 210 455 315 440" fill="none" stroke="url(#topGoldGrad)" stroke-width="12" stroke-linecap="round" opacity="0.85"/>
+          <circle cx="340" cy="315" r="105" fill="url(#topGoldGrad)" stroke="#ffffff" stroke-width="6"/>
           <circle cx="340" cy="315" r="88" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-dasharray="8,6"/>
           <text x="340" y="355" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="900" font-size="115" fill="#451a03" text-anchor="middle">₹</text>
         </svg>
