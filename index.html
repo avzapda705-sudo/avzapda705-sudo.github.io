@@ -90,14 +90,6 @@ border-bottom:1px solid var(--card-border);
 transition:background .3s ease
 }
 .brand{display:flex;align-items:center;gap:12px}
-.brand-img{
-width:38px;
-height:38px;
-border-radius:12px;
-object-fit:cover;
-box-shadow:0 0 16px rgba(139,92,246,0.35);
-border:1px solid rgba(255,255,255,0.12)
-}
 .brand-title{font-size:17px;font-weight:900;letter-spacing:-0.4px;color:var(--text-main)}
 .brand-sub{font-size:11px;color:var(--text-muted);font-weight:600}
 
@@ -445,15 +437,6 @@ box-shadow:0 20px 50px rgba(0,0,0,0.6);
 text-align:center
 }
 .auth-header{margin-bottom:20px}
-.auth-logo-img{
-width:68px;
-height:68px;
-border-radius:22px;
-object-fit:cover;
-box-shadow:0 0 25px rgba(139,92,246,0.45);
-margin-bottom:12px;
-border:1.5px solid rgba(255,255,255,0.15)
-}
 .auth-tabs{
 display:flex;
 background:var(--box-bg);
@@ -567,7 +550,37 @@ transition:all .15s ease
 <!-- TOP APP BAR -->
 <header class="top-bar">
   <div class="brand">
-    <img src="https://avzapda705-sudo.github.io/icon.png" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/avzapda705-sudo/avzapda705-sudo.github.io/main/icon.png'" alt="App Icon" class="brand-img">
+    <!-- ULTRA-PREMIUM VECTOR CIRCULAR APP LOGO -->
+    <div style="width:40px;height:40px;flex-shrink:0;filter:drop-shadow(0 0 14px rgba(99,102,241,0.45));">
+      <svg viewBox="0 0 512 512" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="topBgGlow" cx="40%" cy="35%" r="65%">
+            <stop offset="0%" stop-color="#2a3266"/>
+            <stop offset="55%" stop-color="#141936"/>
+            <stop offset="100%" stop-color="#080b18"/>
+          </radialGradient>
+          <linearGradient id="topGoldGrad" x1="15%" y1="10%" x2="85%" y2="90%">
+            <stop offset="0%" stop-color="#fff4b8"/>
+            <stop offset="30%" stop-color="#f59e0b"/>
+            <stop offset="70%" stop-color="#d97706"/>
+            <stop offset="100%" stop-color="#78350f"/>
+          </linearGradient>
+          <linearGradient id="topPlayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#818cf8"/>
+            <stop offset="50%" stop-color="#6366f1"/>
+            <stop offset="100%" stop-color="#4f46e5"/>
+          </linearGradient>
+        </defs>
+        <circle cx="256" cy="256" r="248" fill="url(#topBgGlow)"/>
+        <circle cx="256" cy="256" r="244" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="6"/>
+        <circle cx="256" cy="256" r="236" fill="none" stroke="rgba(129,140,248,0.25)" stroke-width="2"/>
+        <path d="M165 145 C165 130 182 120 195 128 L345 228 C357 236 357 254 345 262 L195 362 C182 370 165 360 165 345 Z" fill="url(#topPlayGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="5"/>
+        <path d="M110 320 C110 405 210 455 315 440" fill="none" stroke="url(#topGoldGrad)" stroke-width="12" stroke-linecap="round" opacity="0.85"/>
+        <circle cx="340" cy="315" r="105" fill="url(#topGoldGrad)" stroke="#ffffff" stroke-width="6"/>
+        <circle cx="340" cy="315" r="88" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-dasharray="8,6"/>
+        <text x="340" y="355" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="900" font-size="115" fill="#451a03" text-anchor="middle">₹</text>
+      </svg>
+    </div>
     <div>
       <div class="brand-title">Watch to Earn</div>
       <div class="brand-sub">Watch • Spin • Earn</div>
@@ -879,7 +892,37 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
 <div id="authOverlay" class="auth-overlay" style="display:none">
   <div class="auth-card">
     <div class="auth-header">
-      <img src="https://avzapda705-sudo.github.io/icon.png" onerror="this.onerror=null;this.src='https://raw.githubusercontent.com/avzapda705-sudo/avzapda705-sudo.github.io/main/icon.png'" alt="Watch to Earn" class="auth-logo-img">
+      <!-- 72px GLOWING VECTOR EMBLEM -->
+      <div style="width:72px;height:72px;margin:0 auto 12px;filter:drop-shadow(0 0 22px rgba(99,102,241,0.55));">
+        <svg viewBox="0 0 512 512" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="authBgGlow" cx="40%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#2a3266"/>
+              <stop offset="55%" stop-color="#141936"/>
+              <stop offset="100%" stop-color="#080b18"/>
+            </radialGradient>
+            <linearGradient id="authGoldGrad" x1="15%" y1="10%" x2="85%" y2="90%">
+              <stop offset="0%" stop-color="#fff4b8"/>
+              <stop offset="30%" stop-color="#f59e0b"/>
+              <stop offset="70%" stop-color="#d97706"/>
+              <stop offset="100%" stop-color="#78350f"/>
+            </linearGradient>
+            <linearGradient id="authPlayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#818cf8"/>
+              <stop offset="50%" stop-color="#6366f1"/>
+              <stop offset="100%" stop-color="#4f46e5"/>
+            </linearGradient>
+          </defs>
+          <circle cx="256" cy="256" r="248" fill="url(#authBgGlow)"/>
+          <circle cx="256" cy="256" r="244" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="6"/>
+          <circle cx="256" cy="256" r="236" fill="none" stroke="rgba(129,140,248,0.25)" stroke-width="2"/>
+          <path d="M165 145 C165 130 182 120 195 128 L345 228 C357 236 357 254 345 262 L195 362 C182 370 165 360 165 345 Z" fill="url(#authPlayGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="5"/>
+          <path d="M110 320 C110 405 210 455 315 440" fill="none" stroke="url(#authGoldGrad)" stroke-width="12" stroke-linecap="round" opacity="0.85"/>
+          <circle cx="340" cy="315" r="105" fill="url(#authGoldGrad)" stroke="#ffffff" stroke-width="6"/>
+          <circle cx="340" cy="315" r="88" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-dasharray="8,6"/>
+          <text x="340" y="355" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="900" font-size="115" fill="#451a03" text-anchor="middle">₹</text>
+        </svg>
+      </div>
       <h2 style="font-size:22px;margin:0 0 4px">Watch to Earn</h2>
       <div class="muted" style="font-size:13px">Secure Cloud Balance & Account</div>
     </div>
