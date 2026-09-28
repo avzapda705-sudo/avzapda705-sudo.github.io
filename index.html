@@ -396,7 +396,7 @@ box-shadow:0 10px 30px rgba(0,0,0,0.3)
 }
 
 /* ==============================================
-   CLEAN SEPARATED BOTTOM NAVIGATION DOCK (CENTERED & SPACED)
+   CLEAN SEPARATED BOTTOM NAVIGATION DOCK (ENHANCED & SPACED)
    ============================================== */
 .nav{
 position:fixed;
@@ -407,16 +407,16 @@ background:var(--nav-bg);
 display:flex;
 justify-content:space-around;
 align-items:center;
-padding:10px 4px calc(env(safe-area-inset-bottom, 0px) + 6px); /* Line thi niche utarva mate padding */
-border-top:1px solid var(--nav-border);
+padding:6px 4px calc(env(safe-area-inset-bottom, 0px) + 6px);
+border-top:1.5px solid var(--nav-border);
 z-index:90;
-box-shadow:0 -4px 16px rgba(0,0,0,0.5);
-height:64px;
+box-shadow:0 -6px 20px rgba(0,0,0,0.55);
+height:68px;
 }
 .nav button{
 background:none;
 border:0;
-font-size:10.5px;
+font-size:11px;
 color:var(--text-muted);
 font-weight:700;
 cursor:pointer;
@@ -426,14 +426,13 @@ align-items:center;
 justify-content:center;
 gap:3px;
 flex:1;
-padding:0;
-margin-top:1px;
-border-radius:10px;
+padding:2px 0;
+border-radius:12px;
 position:relative;
 transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .nav button b{
-font-size:18px;
+font-size:22px;
 line-height:1;
 display:block;
 transition:transform .2s ease, filter .2s ease;
@@ -446,15 +445,15 @@ color:#c084fc;
 font-weight:900;
 }
 .nav button.nav-active b{
-transform:scale(1.1); /* Upar nahi chhadhe, soft highlight raheshe */
-filter:drop-shadow(0 0 8px rgba(192,132,252,0.6));
+transform:scale(1.12);
+filter:drop-shadow(0 0 10px rgba(192,132,252,0.65));
 }
 .nav button.nav-active::after{
 content:'';
 position:absolute;
-bottom:-4px;
-width:14px;
-height:3px;
+bottom:-3px;
+width:16px;
+height:3.5px;
 background:linear-gradient(90deg,#8b5cf6,#d946ef);
 border-radius:6px;
 box-shadow:0 0 6px rgba(168,85,247,0.7);
@@ -981,113 +980,113 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
             <radialGradient id="authBgGlow" cx="40%" cy="35%" r="65%">
               <stop offset="0%" stop-color="#2a3266"/>
               <stop offset="55%" stop-color="#141936"/>
-              <stop offset="100%" stop-color="#080b18"/>
-            </radialGradient>
-            <linearGradient id="authGoldGrad" x1="15%" y1="10%" x2="85%" y2="90%">
-              <stop offset="0%" stop-color="#fff4b8"/>
-              <stop offset="30%" stop-color="#f59e0b"/>
-              <stop offset="70%" stop-color="#d97706"/>
-              <stop offset="100%" stop-color="#78350f"/>
-            </linearGradient>
-            <linearGradient id="authPlayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#818cf8"/>
-              <stop offset="50%" stop-color="#6366f1"/>
-              <stop offset="100%" stop-color="#4f46e5"/>
-            </linearGradient>
-          </defs>
-          <circle cx="256" cy="256" r="248" fill="url(#authBgGlow)"/>
-          <circle cx="256" cy="256" r="244" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="6"/>
-          <circle cx="256" cy="256" r="236" fill="none" stroke="rgba(129,140,248,0.25)" stroke-width="2"/>
-          <path d="M165 145 C165 130 182 120 195 128 L345 228 C357 236 357 254 345 262 L195 362 C182 370 165 360 165 345 Z" fill="url(#topPlayGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="5"/>
-          <path d="M110 320 C110 405 210 455 315 440" fill="none" stroke="url(#topGoldGrad)" stroke-width="12" stroke-linecap="round" opacity="0.85"/>
-          <circle cx="340" cy="315" r="105" fill="url(#topGoldGrad)" stroke="#ffffff" stroke-width="6"/>
-          <circle cx="340" cy="315" r="88" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-dasharray="8,6"/>
-          <text x="340" y="355" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="900" font-size="115" fill="#451a03" text-anchor="middle">₹</text>
-        </svg>
-      </div>
-      <h2 style="font-size:22px;margin:0 0 4px">Watch to Earn</h2>
-      <div class="muted" style="font-size:13px">Secure Cloud Balance & Account</div>
+            <stop offset="100%" stop-color="#080b18"/>
+          </radialGradient>
+          <linearGradient id="authGoldGrad" x1="15%" y1="10%" x2="85%" y2="90%">
+            <stop offset="0%" stop-color="#fff4b8"/>
+            <stop offset="30%" stop-color="#f59e0b"/>
+            <stop offset="70%" stop-color="#d97706"/>
+            <stop offset="100%" stop-color="#78350f"/>
+          </linearGradient>
+          <linearGradient id="authPlayGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#818cf8"/>
+            <stop offset="50%" stop-color="#6366f1"/>
+            <stop offset="100%" stop-color="#4f46e5"/>
+          </linearGradient>
+        </defs>
+        <circle cx="256" cy="256" r="248" fill="url(#authBgGlow)"/>
+        <circle cx="256" cy="256" r="244" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="6"/>
+        <circle cx="256" cy="256" r="236" fill="none" stroke="rgba(129,140,248,0.25)" stroke-width="2"/>
+        <path d="M165 145 C165 130 182 120 195 128 L345 228 C357 236 357 254 345 262 L195 362 C182 370 165 360 165 345 Z" fill="url(#authPlayGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="5"/>
+        <path d="M110 320 C110 405 210 455 315 440" fill="none" stroke="url(#authGoldGrad)" stroke-width="12" stroke-linecap="round" opacity="0.85"/>
+        <circle cx="340" cy="315" r="105" fill="url(#authGoldGrad)" stroke="#ffffff" stroke-width="6"/>
+        <circle cx="340" cy="315" r="88" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-dasharray="8,6"/>
+        <text x="340" y="355" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="900" font-size="115" fill="#451a03" text-anchor="middle">₹</text>
+      </svg>
     </div>
-
-    <!-- TABS -->
-    <div class="auth-tabs" id="authTabsNav">
-      <button class="auth-tab active" id="tabBtnLogin" onclick="switchAuthTab('login')">LOGIN</button>
-      <button class="auth-tab" id="tabBtnSignup" onclick="switchAuthTab('signup')">SIGN UP</button>
-    </div>
-
-    <!-- LOGIN FORM -->
-    <div id="authLoginSection" class="auth-section active">
-      <input class="input" id="authLoginPhone" type="tel" maxlength="10" placeholder="10-Digit Mobile Number">
-      
-      <div class="pin-input-group">
-        <input class="input" id="authLoginPin" type="password" maxlength="4" placeholder="4-Digit PIN">
-        <button type="button" class="eye-btn" onclick="togglePinVisibility('authLoginPin', this)">
-          <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-        </button>
-      </div>
-      <div class="auth-error-msg" id="authLoginError"></div>
-
-      <span class="auth-forgot-link" onclick="openForgotPin()">Forgot PIN?</span>
-      <button class="btn" id="btnSubmitLogin" onclick="handleLogin()">SECURE LOGIN</button>
-    </div>
-
-    <!-- SIGNUP FORM -->
-    <div id="authSignupSection" class="auth-section">
-      <input class="input" id="authSignupPhone" type="tel" maxlength="10" placeholder="10-Digit Mobile Number">
-      
-      <div class="pin-input-group">
-        <input class="input" id="authSignupPin" type="password" maxlength="4" placeholder="Create 4-Digit PIN">
-        <button type="button" class="eye-btn" onclick="togglePinVisibility('authSignupPin', this)">
-          <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-        </button>
-      </div>
-
-      <input class="input" id="authSignupBirthYear" type="number" placeholder="Birth Year (e.g., 2002 - Recovery Key)">
-      <div class="auth-error-msg" id="authSignupError"></div>
-
-      <button class="btn" id="btnSubmitSignup" onclick="handleSignup()">CREATE ACCOUNT</button>
-    </div>
-
-    <!-- FORGOT PIN FORM -->
-    <div id="authForgotSection" class="auth-section">
-      <h3 style="margin:4px 0 10px;font-size:16px;color:#a855f7">Reset Forgotten PIN</h3>
-      <input class="input" id="authForgotPhone" type="tel" maxlength="10" placeholder="Registered Mobile Number">
-      <input class="input" id="authForgotBirthYear" type="number" placeholder="Your Registered Birth Year">
-      
-      <div class="pin-input-group">
-        <input class="input" id="authForgotNewPin" type="password" maxlength="4" placeholder="Enter New 4-Digit PIN">
-        <button type="button" class="eye-btn" onclick="togglePinVisibility('authForgotNewPin', this)">
-          <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-        </button>
-      </div>
-      <div class="auth-error-msg" id="authForgotError"></div>
-
-      <button class="btn" id="btnSubmitForgot" onclick="handleResetPin()">RESET & LOGIN</button>
-      <span class="auth-forgot-link" style="margin-top:12px;display:block" onclick="switchAuthTab('login')">← Back to Login</span>
-    </div>
-
+    <h2 style="font-size:22px;margin:0 0 4px">Watch to Earn</h2>
+    <div class="muted" style="font-size:13px">Secure Cloud Balance & Account</div>
   </div>
+
+  <!-- TABS -->
+  <div class="auth-tabs" id="authTabsNav">
+    <button class="auth-tab active" id="tabBtnLogin" onclick="switchAuthTab('login')">LOGIN</button>
+    <button class="auth-tab" id="tabBtnSignup" onclick="switchAuthTab('signup')">SIGN UP</button>
+  </div>
+
+  <!-- LOGIN FORM -->
+  <div id="authLoginSection" class="auth-section active">
+    <input class="input" id="authLoginPhone" type="tel" maxlength="10" placeholder="10-Digit Mobile Number">
+    
+    <div class="pin-input-group">
+      <input class="input" id="authLoginPin" type="password" maxlength="4" placeholder="4-Digit PIN">
+      <button type="button" class="eye-btn" onclick="togglePinVisibility('authLoginPin', this)">
+        <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </button>
+    </div>
+    <div class="auth-error-msg" id="authLoginError"></div>
+
+    <span class="auth-forgot-link" onclick="openForgotPin()">Forgot PIN?</span>
+    <button class="btn" id="btnSubmitLogin" onclick="handleLogin()">SECURE LOGIN</button>
+  </div>
+
+  <!-- SIGNUP FORM -->
+  <div id="authSignupSection" class="auth-section">
+    <input class="input" id="authSignupPhone" type="tel" maxlength="10" placeholder="10-Digit Mobile Number">
+    
+    <div class="pin-input-group">
+      <input class="input" id="authSignupPin" type="password" maxlength="4" placeholder="Create 4-Digit PIN">
+      <button type="button" class="eye-btn" onclick="togglePinVisibility('authSignupPin', this)">
+        <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </button>
+    </div>
+
+    <input class="input" id="authSignupBirthYear" type="number" placeholder="Birth Year (e.g., 2002 - Recovery Key)">
+    <div class="auth-error-msg" id="authSignupError"></div>
+
+    <button class="btn" id="btnSubmitSignup" onclick="handleSignup()">CREATE ACCOUNT</button>
+  </div>
+
+  <!-- FORGOT PIN FORM -->
+  <div id="authForgotSection" class="auth-section">
+    <h3 style="margin:4px 0 10px;font-size:16px;color:#a855f7">Reset Forgotten PIN</h3>
+    <input class="input" id="authForgotPhone" type="tel" maxlength="10" placeholder="Registered Mobile Number">
+    <input class="input" id="authForgotBirthYear" type="number" placeholder="Your Registered Birth Year">
+    
+    <div class="pin-input-group">
+      <input class="input" id="authForgotNewPin" type="password" maxlength="4" placeholder="Enter New 4-Digit PIN">
+      <button type="button" class="eye-btn" onclick="togglePinVisibility('authForgotNewPin', this)">
+        <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </button>
+    </div>
+    <div class="auth-error-msg" id="authForgotError"></div>
+
+    <button class="btn" id="btnSubmitForgot" onclick="handleResetPin()">RESET & LOGIN</button>
+    <span class="auth-forgot-link" style="margin-top:12px;display:block" onclick="switchAuthTab('login')">← Back to Login</span>
+  </div>
+
+</div>
 </div>
 
 <!-- ==============================================
      MODERN LOGOUT CONFIRMATION DIALOG
      ============================================== -->
 <div id="logoutDialog" class="dialog-overlay" style="display:none">
-  <div class="dialog-card">
-    <div class="logout-icon-bubble">
-      <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">
-        <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-      </svg>
-    </div>
-    <h3 style="margin:0 0 8px;font-size:19px;color:var(--text-main)">Log Out Account?</h3>
-    <div class="muted" style="font-size:13px;line-height:1.5">
-      Your balance is safely secured in cloud storage. You can log back in anytime using your phone number and PIN.
-    </div>
-    <div class="dialog-actions">
-      <button class="btn-cancel" onclick="closeLogoutDialog()">CANCEL</button>
-      <button class="btn-logout" onclick="confirmLogout()">LOG OUT</button>
-    </div>
+<div class="dialog-card">
+  <div class="logout-icon-bubble">
+    <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">
+      <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+    </svg>
   </div>
+  <h3 style="margin:0 0 8px;font-size:19px;color:var(--text-main)">Log Out Account?</h3>
+  <div class="muted" style="font-size:13px;line-height:1.5">
+    Your balance is safely secured in cloud storage. You can log back in anytime using your phone number and PIN.
+  </div>
+  <div class="dialog-actions">
+    <button class="btn-cancel" onclick="closeLogoutDialog()">CANCEL</button>
+    <button class="btn-logout" onclick="confirmLogout()">LOG OUT</button>
+  </div>
+</div>
 </div>
 
 <script>
@@ -1104,78 +1103,78 @@ var SUPPORT_EMAIL = "help.watchtoearn@gmail.com";
    ============================================== */
 var audioCtx = null;
 function getAudioContext(){
-  if(!audioCtx){
-    var AudioContext = window.AudioContext || window.webkitAudioContext;
-    if(AudioContext){
-      audioCtx = new AudioContext();
-    }
+if(!audioCtx){
+  var AudioContext = window.AudioContext || window.webkitAudioContext;
+  if(AudioContext){
+    audioCtx = new AudioContext();
   }
-  if(audioCtx && audioCtx.state === 'suspended'){
-    audioCtx.resume();
-  }
-  return audioCtx;
+}
+if(audioCtx && audioCtx.state === 'suspended'){
+  audioCtx.resume();
+}
+return audioCtx;
 }
 
 function playMechanicalTick(){
-  try{
-    var ctx = getAudioContext();
-    if(!ctx) return;
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(820, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.022);
-    
-    gain.gain.setValueAtTime(0.35, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.022);
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.022);
-  }catch(e){}
+try{
+  var ctx = getAudioContext();
+  if(!ctx) return;
+  var osc = ctx.createOscillator();
+  var gain = ctx.createGain();
+  
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(820, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.022);
+  
+  gain.gain.setValueAtTime(0.35, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.022);
+  
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.022);
+}catch(e){}
 }
 
 function playWinSound(){
-  try{
-    var ctx = getAudioContext();
-    if(!ctx) return;
-    [587.33, 739.99, 880, 1174.66].forEach(function(freq, i){
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      var startTime = ctx.currentTime + (i * 0.08);
-      gain.gain.setValueAtTime(0, startTime);
-      gain.gain.linearRampToValueAtTime(0.28, startTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(startTime);
-      osc.stop(startTime + 0.48);
-    });
-  }catch(e){}
+try{
+  var ctx = getAudioContext();
+  if(!ctx) return;
+  [587.33, 739.99, 880, 1174.66].forEach(function(freq, i){
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    var startTime = ctx.currentTime + (i * 0.08);
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(0.28, startTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + 0.48);
+  });
+}catch(e){}
 }
 
 function triggerHaptic(pattern){
-  if(window.navigator && typeof window.navigator.vibrate === 'function'){
-    try{ window.navigator.vibrate(pattern); }catch(e){}
-  }
+if(window.navigator && typeof window.navigator.vibrate === 'function'){
+  try{ window.navigator.vibrate(pattern); }catch(e){}
+}
 }
 
 /* ==============================================
    AUTOMATIC DAY / NIGHT THEME CONTROLLER
    ============================================== */
 function applyAutoTheme(){
-  var hr = new Date().getHours();
-  var isDay = (hr >= 6 && hr < 19);
-  if(isDay){
-    document.body.classList.add('theme-light');
-  } else {
-    document.body.classList.remove('theme-light');
-  }
+var hr = new Date().getHours();
+var isDay = (hr >= 6 && hr < 19);
+if(isDay){
+  document.body.classList.add('theme-light');
+} else {
+  document.body.classList.remove('theme-light');
+}
 }
 applyAutoTheme();
 setInterval(applyAutoTheme, 300000);
@@ -1185,40 +1184,40 @@ setInterval(applyAutoTheme, 300000);
    ============================================== */
 var bonusTimerInterval = null;
 function checkBonusState(){
-  var btn = $('bonusBtn');
-  if(!btn) return;
+var btn = $('bonusBtn');
+if(!btn) return;
+
+if(localStorage.getItem('wte_bonus_date') === day()){
+  btn.disabled = true;
+  if(bonusTimerInterval) clearInterval(bonusTimerInterval);
   
-  if(localStorage.getItem('wte_bonus_date') === day()){
-    btn.disabled = true;
-    if(bonusTimerInterval) clearInterval(bonusTimerInterval);
+  function updateRemainingTime(){
+    var now = new Date();
+    var midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
+    var diff = midnight.getTime() - now.getTime();
     
-    function updateRemainingTime(){
-      var now = new Date();
-      var midnight = new Date();
-      midnight.setHours(24, 0, 0, 0);
-      var diff = midnight.getTime() - now.getTime();
-      
-      if(diff <= 0){
-        clearInterval(bonusTimerInterval);
-        btn.disabled = false;
-        btn.textContent = '🎁 CLAIM DAILY BONUS';
-        return;
-      }
-      
-      var hrs = Math.floor(diff / 3600000);
-      var mins = Math.floor((diff % 3600000) / 60000);
-      var secs = Math.floor((diff % 60000) / 1000);
-      
-      btn.textContent = '⏳ Next Bonus in ' + hrs + 'h ' + (mins < 10 ? '0' : '') + mins + 'm ' + (secs < 10 ? '0' : '') + secs + 's';
+    if(diff <= 0){
+      clearInterval(bonusTimerInterval);
+      btn.disabled = false;
+      btn.textContent = '🎁 CLAIM DAILY BONUS';
+      return;
     }
     
-    updateRemainingTime();
-    bonusTimerInterval = setInterval(updateRemainingTime, 1000);
-  } else {
-    if(bonusTimerInterval) clearInterval(bonusTimerInterval);
-    btn.disabled = false;
-    btn.textContent = '🎁 CLAIM DAILY BONUS';
+    var hrs = Math.floor(diff / 3600000);
+    var mins = Math.floor((diff % 3600000) / 60000);
+    var secs = Math.floor((diff % 60000) / 1000);
+    
+    btn.textContent = '⏳ Next Bonus in ' + hrs + 'h ' + (mins < 10 ? '0' : '') + mins + 'm ' + (secs < 10 ? '0' : '') + secs + 's';
   }
+  
+  updateRemainingTime();
+  bonusTimerInterval = setInterval(updateRemainingTime, 1000);
+} else {
+  if(bonusTimerInterval) clearInterval(bonusTimerInterval);
+  btn.disabled = false;
+  btn.textContent = '🎁 CLAIM DAILY BONUS';
+}
 }
 
 /* ==============================================
@@ -1228,51 +1227,51 @@ var surpriseTimerInterval = null;
 var SURPRISE_COOLDOWN_MS = 30 * 60 * 1000; // 30 Minutes
 
 function checkSurpriseBoxState(){
-  var btn = $('surpriseBtn');
-  if(!btn) return;
+var btn = $('surpriseBtn');
+if(!btn) return;
 
-  var lastClaimTime = Number(localStorage.getItem('wte_surprise_time') || 0);
-  var now = Date.now();
-  var diff = (lastClaimTime + SURPRISE_COOLDOWN_MS) - now;
+var lastClaimTime = Number(localStorage.getItem('wte_surprise_time') || 0);
+var now = Date.now();
+var diff = (lastClaimTime + SURPRISE_COOLDOWN_MS) - now;
 
-  if(diff > 0){
-    btn.disabled = true;
-    if(surpriseTimerInterval) clearInterval(surpriseTimerInterval);
+if(diff > 0){
+  btn.disabled = true;
+  if(surpriseTimerInterval) clearInterval(surpriseTimerInterval);
 
-    function updateSurpriseCountdown(){
-      var currentDiff = (lastClaimTime + SURPRISE_COOLDOWN_MS) - Date.now();
-      if(currentDiff <= 0){
-        clearInterval(surpriseTimerInterval);
-        btn.disabled = false;
-        btn.textContent = '🎁 OPEN SURPRISE BOX';
-        return;
-      }
-      var mins = Math.floor(currentDiff / 60000);
-      var secs = Math.floor((currentDiff % 60000) / 1000);
-      btn.textContent = '⏳ Next Box in ' + mins + 'm ' + (secs < 10 ? '0' : '') + secs + 's';
+  function updateSurpriseCountdown(){
+    var currentDiff = (lastClaimTime + SURPRISE_COOLDOWN_MS) - Date.now();
+    if(currentDiff <= 0){
+      clearInterval(surpriseTimerInterval);
+      btn.disabled = false;
+      btn.textContent = '🎁 OPEN SURPRISE BOX';
+      return;
     }
-
-    updateSurpriseCountdown();
-    surpriseTimerInterval = setInterval(updateSurpriseCountdown, 1000);
-  } else {
-    if(surpriseTimerInterval) clearInterval(surpriseTimerInterval);
-    btn.disabled = false;
-    btn.textContent = '🎁 OPEN SURPRISE BOX';
+    var mins = Math.floor(currentDiff / 60000);
+    var secs = Math.floor((currentDiff % 60000) / 1000);
+    btn.textContent = '⏳ Next Box in ' + mins + 'm ' + (secs < 10 ? '0' : '') + secs + 's';
   }
+
+  updateSurpriseCountdown();
+  surpriseTimerInterval = setInterval(updateSurpriseCountdown, 1000);
+} else {
+  if(surpriseTimerInterval) clearInterval(surpriseTimerInterval);
+  btn.disabled = false;
+  btn.textContent = '🎁 OPEN SURPRISE BOX';
+}
 }
 
 // SAFE WEIGHTED REWARD LOGIC: 10 TO 500 DISPLAY, SAFE COINS GIVEN
 function calculateSurpriseReward(){
-  var r = Math.random() * 100;
-  if(r < 82){
-    return Math.floor(Math.random() * (35 - 20 + 1)) + 20;
-  } else if(r < 95){
-    return Math.floor(Math.random() * (19 - 12 + 1)) + 12;
-  } else if(r < 99.2){
-    return Math.floor(Math.random() * (50 - 40 + 1)) + 40;
-  } else {
-    return Math.floor(Math.random() * (100 - 75 + 1)) + 75;
-  }
+var r = Math.random() * 100;
+if(r < 82){
+  return Math.floor(Math.random() * (35 - 20 + 1)) + 20;
+} else if(r < 95){
+  return Math.floor(Math.random() * (19 - 12 + 1)) + 12;
+} else if(r < 99.2){
+  return Math.floor(Math.random() * (50 - 40 + 1)) + 40;
+} else {
+  return Math.floor(Math.random() * (100 - 75 + 1)) + 75;
+}
 }
 
 var rewards=[
@@ -1301,55 +1300,55 @@ var SVG_EYE_OPEN = '<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 
 var SVG_EYE_SLASH = '<svg viewBox="0 0 24 24"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>';
 
 window.togglePinVisibility=function(inputId, btnEl){
-  var el = $(inputId);
-  if(!el) return;
-  if(el.type === 'password'){
-    el.type = 'text';
-    btnEl.innerHTML = SVG_EYE_SLASH;
-  } else {
-    el.type = 'password';
-    btnEl.innerHTML = SVG_EYE_OPEN;
-  }
+var el = $(inputId);
+if(!el) return;
+if(el.type === 'password'){
+  el.type = 'text';
+  btnEl.innerHTML = SVG_EYE_SLASH;
+} else {
+  el.type = 'password';
+  btnEl.innerHTML = SVG_EYE_OPEN;
+}
 };
 
 function clearAuthErrors(){
-  var errors = document.querySelectorAll('.auth-error-msg');
-  errors.forEach(function(e){ e.textContent = ''; e.style.display = 'none'; });
-  var inputs = document.querySelectorAll('.input-error');
-  inputs.forEach(function(i){ i.classList.remove('input-error'); });
+var errors = document.querySelectorAll('.auth-error-msg');
+errors.forEach(function(e){ e.textContent = ''; e.style.display = 'none'; });
+var inputs = document.querySelectorAll('.input-error');
+inputs.forEach(function(i){ i.classList.remove('input-error'); });
 }
 
 function showAuthError(errElementId, targetInputId, msg){
-  var el = $(errElementId);
-  if(el){
-    el.textContent = '❌ ' + msg;
-    el.style.display = 'block';
-  }
-  var inp = $(targetInputId);
-  if(inp){
-    inp.classList.remove('input-error');
-    void inp.offsetWidth;
-    inp.classList.add('input-error');
-    inp.focus();
-  }
-  toast(msg);
+var el = $(errElementId);
+if(el){
+  el.textContent = '❌ ' + msg;
+  el.style.display = 'block';
+}
+var inp = $(targetInputId);
+if(inp){
+  inp.classList.remove('input-error');
+  void inp.offsetWidth;
+  inp.classList.add('input-error');
+  inp.focus();
+}
+toast(msg);
 }
 
 /* ========================================================
    PERSISTENT FIREBASE SYNC (COINS + PERSISTENT DAILY LIMITS)
    ======================================================== */
 function syncBalanceToFirebase(additionalData){
-  var phone = localStorage.getItem('wte_phone');
-  if(!phone) return;
-  var payload = { coins: balance, lastSeen: new Date().toISOString() };
-  if(additionalData){
-    Object.assign(payload, additionalData);
-  }
-  fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  }).catch(function(e){});
+var phone = localStorage.getItem('wte_phone');
+if(!phone) return;
+var payload = { coins: balance, lastSeen: new Date().toISOString() };
+if(additionalData){
+  Object.assign(payload, additionalData);
+}
+fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
+  method: "PATCH",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(payload)
+}).catch(function(e){});
 }
 
 function saveBalance(){
@@ -1381,11 +1380,11 @@ p.classList.add('active');
 
 // Highlight active navigation tab
 document.querySelectorAll('.nav button').forEach(function(btn){
-  btn.classList.remove('nav-active');
-  var onclickStr = btn.getAttribute('onclick') || '';
-  if(onclickStr.indexOf("'" + id + "'") !== -1){
-    btn.classList.add('nav-active');
-  }
+btn.classList.remove('nav-active');
+var onclickStr = btn.getAttribute('onclick') || '';
+if(onclickStr.indexOf("'" + id + "'") !== -1){
+  btn.classList.add('nav-active');
+}
 });
 
 if(id==='withdraw'){
@@ -1629,52 +1628,52 @@ triggerAdMob('spin');
 };
 
 function doSpin(){
-  spinning = true;
-  var usedCount = spinUsed() + 1;
-  localStorage.setItem('wte_spin_count', String(usedCount));
-  syncBalanceToFirebase({ spinDate: day(), spinCount: usedCount });
-  updateSpin();
+spinning = true;
+var usedCount = spinUsed() + 1;
+localStorage.setItem('wte_spin_count', String(usedCount));
+syncBalanceToFirebase({ spinDate: day(), spinCount: usedCount });
+updateSpin();
 
-  var reward = weighted();
-  var index = rewards.findIndex(function(x){ return x.coins === reward.coins; });
-  var target = 360 * 6 - 36 - index * 72;
+var reward = weighted();
+var index = rewards.findIndex(function(x){ return x.coins === reward.coins; });
+var target = 360 * 6 - 36 - index * 72;
 
-  rotation += target - (rotation % 360);
-  $('wheel').style.transform = 'rotate(' + rotation + 'deg)';
+rotation += target - (rotation % 360);
+$('wheel').style.transform = 'rotate(' + rotation + 'deg)';
 
-  var totalDuration = 4200;
-  var startTime = Date.now();
-  var lastTickSector = -1;
+var totalDuration = 4200;
+var startTime = Date.now();
+var lastTickSector = -1;
 
-  function runPhysicsLoop(){
-    if(!spinning) return;
-    var elapsed = Date.now() - startTime;
-    if(elapsed >= totalDuration) return;
+function runPhysicsLoop(){
+  if(!spinning) return;
+  var elapsed = Date.now() - startTime;
+  if(elapsed >= totalDuration) return;
 
-    var progress = elapsed / totalDuration;
-    var ease = 1 - Math.pow(1 - progress, 3.2);
-    var currentAngle = ease * target;
-    var currentSector = Math.floor(currentAngle / 72);
+  var progress = elapsed / totalDuration;
+  var ease = 1 - Math.pow(1 - progress, 3.2);
+  var currentAngle = ease * target;
+  var currentSector = Math.floor(currentAngle / 72);
 
-    if(currentSector !== lastTickSector){
-      lastTickSector = currentSector;
-      playMechanicalTick();
-      triggerHaptic(22);
-    }
-
-    requestAnimationFrame(runPhysicsLoop);
+  if(currentSector !== lastTickSector){
+    lastTickSector = currentSector;
+    playMechanicalTick();
+    triggerHaptic(22);
   }
-  requestAnimationFrame(runPhysicsLoop);
 
-  setTimeout(function(){
-    balance += reward.coins;
-    saveBalance();
-    playWinSound();
-    triggerHaptic([50, 60, 100]);
-    toast('🎉 You won ' + reward.coins + ' coins!');
-    spinning = false;
-    updateSpin();
-  }, totalDuration + 100);
+  requestAnimationFrame(runPhysicsLoop);
+}
+requestAnimationFrame(runPhysicsLoop);
+
+setTimeout(function(){
+  balance += reward.coins;
+  saveBalance();
+  playWinSound();
+  triggerHaptic([50, 60, 100]);
+  toast('🎉 You won ' + reward.coins + ' coins!');
+  spinning = false;
+  updateSpin();
+}, totalDuration + 100);
 }
 
 /* ==============================================
@@ -1702,13 +1701,13 @@ return;
 
 var inrAmount;
 if (amount >= 1000) {
-  var superUnits = Math.floor(amount / 1000);
-  var remainingCoins = amount % 1000;
-  var superInr = superUnits * 10;
-  var regularInr = remainingCoins / 200;
-  inrAmount = (superInr + regularInr).toFixed(2).replace(/\.00$/, '');
+var superUnits = Math.floor(amount / 1000);
+var remainingCoins = amount % 1000;
+var superInr = superUnits * 10;
+var regularInr = remainingCoins / 200;
+inrAmount = (superInr + regularInr).toFixed(2).replace(/\.00$/, '');
 } else {
-  inrAmount = (amount / 200).toFixed(2).replace(/\.00$/, '');
+inrAmount = (amount / 200).toFixed(2).replace(/\.00$/, '');
 }
 
 balance-=amount;
@@ -1745,59 +1744,59 @@ ticker.innerHTML = liveEntry + ticker.innerHTML;
 }
 
 fetch(FIREBASE_DB_URL + "/" + reqId + ".json", {
-  method: "PUT",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(newReq)
+method: "PUT",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify(newReq)
 }).catch(function(e){ console.error(e); });
 
 var botToken = "8932759393:AAEBYxPRAHPHWrQeyCePu26ZDEQpOgLLKnU";
 var chatId = "6748953573";
 
 var textMsg = "💸 *New Withdrawal Request!*\n\n"
-            + "🆔 *ID:* `" + reqId + "`\n"
-            + "👤 *User:* " + userName + "\n"
-            + "📱 *Phone:* `" + (localStorage.getItem('wte_phone')||'N/A') + "`\n"
-            + "🪙 *Coins:* " + amount + " (= ₹" + inrAmount + ")\n"
-            + "💳 *UPI ID:* `" + upi + "`\n"
-            + "📅 *Date:* " + reqDate;
+          + "🆔 *ID:* `" + reqId + "`\n"
+          + "👤 *User:* " + userName + "\n"
+          + "📱 *Phone:* `" + (localStorage.getItem('wte_phone')||'N/A') + "`\n"
+          + "🪙 *Coins:* " + amount + " (= ₹" + inrAmount + ")\n"
+          + "💳 *UPI ID:* `" + upi + "`\n"
+          + "📅 *Date:* " + reqDate;
 
 fetch("https://api.telegram.org/bot" + botToken + "/sendMessage", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    chat_id: chatId,
-    text: textMsg,
-    parse_mode: "Markdown"
-  })
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({
+  chat_id: chatId,
+  text: textMsg,
+  parse_mode: "Markdown"
+})
 }).catch(function(err){});
 };
 
 function fetchLiveWithdrawals(){
 fetch(FIREBASE_DB_URL + ".json")
-  .then(function(res){ return res.json(); })
-  .then(function(data){
-    if(!data) return;
-    var keys = Object.keys(data);
-    if(!keys.length) return;
-    
-    keys.sort().reverse();
-    var latest = keys.slice(0, 8);
-    var tickerItems = [];
-    
-    latest.forEach(function(k){
-      var item = data[k];
-      if(item && item.upi){
-        var uName = item.user || 'User';
-        var uUpi = maskUpi(item.upi);
-        var inr = item.inr || ('₹' + Math.max(1, Math.floor((item.amount || 200) / 200)));
-        tickerItems.push('🟢 ' + uName + ' (' + uUpi + ') withdrew ' + inr);
-      }
-    });
-    
-    if(tickerItems.length && $('liveTickerText')){$('liveTickerText').innerHTML = tickerItems.join(' • ') + ' • ';
+.then(function(res){ return res.json(); })
+.then(function(data){
+  if(!data) return;
+  var keys = Object.keys(data);
+  if(!keys.length) return;
+  
+  keys.sort().reverse();
+  var latest = keys.slice(0, 8);
+  var tickerItems = [];
+  
+  latest.forEach(function(k){
+    var item = data[k];
+    if(item && item.upi){
+      var uName = item.user || 'User';
+      var uUpi = maskUpi(item.upi);
+      var inr = item.inr || ('₹' + Math.max(1, Math.floor((item.amount || 200) / 200)));
+      tickerItems.push('🟢 ' + uName + ' (' + uUpi + ') withdrew ' + inr);
     }
-  })
-  .catch(function(e){});
+  });
+  
+  if(tickerItems.length && $('liveTickerText')){$('liveTickerText').innerHTML = tickerItems.join(' • ') + ' • ';
+  }
+})
+.catch(function(e){});
 }
 
 function syncLiveStatuses(){
@@ -1805,22 +1804,22 @@ var h=JSON.parse(localStorage.getItem('wte_history')||'[]');
 if(!h.length) return;
 
 fetch(FIREBASE_DB_URL + ".json")
-  .then(function(res){ return res.json(); })
-  .then(function(data){
-    if(!data) return;
-    var changed = false;
-    h.forEach(function(item){
-      if(data[item.id] && data[item.id].status && data[item.id].status !== item.status){
-        item.status = data[item.id].status;
-        changed = true;
-      }
-    });
-    if(changed){
-      localStorage.setItem('wte_history', JSON.stringify(h));
-      renderHistory();
+.then(function(res){ return res.json(); })
+.then(function(data){
+  if(!data) return;
+  var changed = false;
+  h.forEach(function(item){
+    if(data[item.id] && data[item.id].status && data[item.id].status !== item.status){
+      item.status = data[item.id].status;
+      changed = true;
     }
-  })
-  .catch(function(err){ console.error(err); });
+  });
+  if(changed){
+    localStorage.setItem('wte_history', JSON.stringify(h));
+    renderHistory();
+  }
+})
+.catch(function(err){ console.error(err); });
 }
 
 function renderHistory(){
@@ -1870,9 +1869,9 @@ window.copyReferral=function(){
 var text=referralUrl();
 if(navigator.clipboard&&window.isSecureContext){
 navigator.clipboard.writeText(text).then(function(){
-toast('✅ Referral link copied');
+  toast('✅ Referral link copied');
 }).catch(function(){
-fallbackCopy(text);
+  fallbackCopy(text);
 });
 }else{
 fallbackCopy(text);
@@ -1907,293 +1906,293 @@ window.location.href=url;
    ============================================== */
 
 window.switchAuthTab=function(mode){
-  clearAuthErrors();
-  $('tabBtnLogin').classList.toggle('active', mode==='login');$('tabBtnSignup').classList.toggle('active', mode==='signup');
-  $('authTabsNav').style.display = 'flex';$('authLoginSection').classList.toggle('active', mode==='login');
-  $('authSignupSection').classList.toggle('active', mode==='signup');$('authForgotSection').classList.remove('active');
+clearAuthErrors();
+$('tabBtnLogin').classList.toggle('active', mode==='login');$('tabBtnSignup').classList.toggle('active', mode==='signup');
+$('authTabsNav').style.display = 'flex';$('authLoginSection').classList.toggle('active', mode==='login');
+$('authSignupSection').classList.toggle('active', mode==='signup');$('authForgotSection').classList.remove('active');
 };
 
 window.openForgotPin=function(){
-  clearAuthErrors();
-  $('authTabsNav').style.display = 'none';$('authLoginSection').classList.remove('active');
-  $('authSignupSection').classList.remove('active');$('authForgotSection').classList.add('active');
+clearAuthErrors();
+$('authTabsNav').style.display = 'none';$('authLoginSection').classList.remove('active');
+$('authSignupSection').classList.remove('active');$('authForgotSection').classList.add('active');
 };
 
 window.handleSignup=function(){
-  clearAuthErrors();
-  var phone = $('authSignupPhone').value.trim();
-  var pin = $('authSignupPin').value.trim();
-  var birthYear = $('authSignupBirthYear').value.trim();
+clearAuthErrors();
+var phone = $('authSignupPhone').value.trim();
+var pin = $('authSignupPin').value.trim();
+var birthYear = $('authSignupBirthYear').value.trim();
 
-  if(phone.length !== 10 || isNaN(phone)){
-    showAuthError('authSignupError', 'authSignupPhone', 'Enter a valid 10-digit phone number');
-    return;
-  }
-  if(pin.length !== 4 || isNaN(pin)){
-    showAuthError('authSignupError', 'authSignupPin', 'PIN must be 4 digits');
-    return;
-  }
-  if(!birthYear || isNaN(birthYear) || birthYear < 1940 || birthYear > 2025){
-    showAuthError('authSignupError', 'authSignupBirthYear', 'Enter valid Birth Year (e.g. 2002)');
-    return;
-  }
+if(phone.length !== 10 || isNaN(phone)){
+  showAuthError('authSignupError', 'authSignupPhone', 'Enter a valid 10-digit phone number');
+  return;
+}
+if(pin.length !== 4 || isNaN(pin)){
+  showAuthError('authSignupError', 'authSignupPin', 'PIN must be 4 digits');
+  return;
+}
+if(!birthYear || isNaN(birthYear) || birthYear < 1940 || birthYear > 2025){
+  showAuthError('authSignupError', 'authSignupBirthYear', 'Enter valid Birth Year (e.g. 2002)');
+  return;
+}
 
-  var btn = $('btnSubmitSignup');
-  btn.disabled = true;
-  btn.textContent = 'Creating Account...';
+var btn = $('btnSubmitSignup');
+btn.disabled = true;
+btn.textContent = 'Creating Account...';
 
-  fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
-    .then(function(res){ return res.json(); })
-    .then(function(existing){
-      if(existing){
-        btn.disabled = false;
-        btn.textContent = 'CREATE ACCOUNT';
-        switchAuthTab('login');
-        $('authLoginPhone').value = phone;
-        showAuthError('authLoginError', 'authLoginPhone', 'Account already exists! Please enter your PIN.');
-        return;
-      }
-
-      var newUser = {
-        phone: phone,
-        pin: pin,
-        birthYear: birthYear,
-        coins: balance,
-        name: localStorage.getItem('wte_name') || 'User',
-        createdAt: new Date().toISOString()
-      };
-
-      fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUser)
-      }).then(function(){
-        localStorage.setItem('wte_phone', phone);
-        localStorage.setItem('wte_pin', pin);
-        localStorage.setItem('wte_birth_year', birthYear);
-        $('authOverlay').style.display = 'none';
-        btn.disabled = false;
-        btn.textContent = 'CREATE ACCOUNT';
-        updateProfileDisplay();
-        toast('🎉 Account created successfully!');
-      }).catch(function(){
-        btn.disabled = false;
-        btn.textContent = 'CREATE ACCOUNT';
-        showAuthError('authSignupError', 'authSignupPhone', 'Network error. Try again.');
-      });
-    })
-    .catch(function(){
+fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
+  .then(function(res){ return res.json(); })
+  .then(function(existing){
+    if(existing){
       btn.disabled = false;
       btn.textContent = 'CREATE ACCOUNT';
-      showAuthError('authSignupError', 'authSignupPhone', 'Connection failed. Check network.');
+      switchAuthTab('login');
+      $('authLoginPhone').value = phone;
+      showAuthError('authLoginError', 'authLoginPhone', 'Account already exists! Please enter your PIN.');
+      return;
+    }
+
+    var newUser = {
+      phone: phone,
+      pin: pin,
+      birthYear: birthYear,
+      coins: balance,
+      name: localStorage.getItem('wte_name') || 'User',
+      createdAt: new Date().toISOString()
+    };
+
+    fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newUser)
+    }).then(function(){
+      localStorage.setItem('wte_phone', phone);
+      localStorage.setItem('wte_pin', pin);
+      localStorage.setItem('wte_birth_year', birthYear);
+      $('authOverlay').style.display = 'none';
+      btn.disabled = false;
+      btn.textContent = 'CREATE ACCOUNT';
+      updateProfileDisplay();
+      toast('🎉 Account created successfully!');
+    }).catch(function(){
+      btn.disabled = false;
+      btn.textContent = 'CREATE ACCOUNT';
+      showAuthError('authSignupError', 'authSignupPhone', 'Network error. Try again.');
     });
+  })
+  .catch(function(){
+    btn.disabled = false;
+    btn.textContent = 'CREATE ACCOUNT';
+    showAuthError('authSignupError', 'authSignupPhone', 'Connection failed. Check network.');
+  });
 };
 
 window.handleLogin=function(){
-  clearAuthErrors();
-  var phone = $('authLoginPhone').value.trim();
-  var pin = $('authLoginPin').value.trim();
+clearAuthErrors();
+var phone = $('authLoginPhone').value.trim();
+var pin = $('authLoginPin').value.trim();
 
-  if(phone.length !== 10 || isNaN(phone)){
-    showAuthError('authLoginError', 'authLoginPhone', 'Enter a valid 10-digit phone number');
-    return;
-  }
-  if(pin.length !== 4 || isNaN(pin)){
-    showAuthError('authLoginError', 'authLoginPin', 'Enter 4-digit PIN');
-    return;
-  }
+if(phone.length !== 10 || isNaN(phone)){
+  showAuthError('authLoginError', 'authLoginPhone', 'Enter a valid 10-digit phone number');
+  return;
+}
+if(pin.length !== 4 || isNaN(pin)){
+  showAuthError('authLoginError', 'authLoginPin', 'Enter 4-digit PIN');
+  return;
+}
 
-  var btn = $('btnSubmitLogin');
-  btn.disabled = true;
-  btn.textContent = 'Logging in...';
+var btn = $('btnSubmitLogin');
+btn.disabled = true;
+btn.textContent = 'Logging in...';
 
-  fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
-    .then(function(res){ return res.json(); })
-    .then(function(user){
+fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
+  .then(function(res){ return res.json(); })
+  .then(function(user){
+    btn.disabled = false;
+    btn.textContent = 'SECURE LOGIN';
+
+    if(!user){
+      switchAuthTab('signup');
+      $('authSignupPhone').value = phone;
+      showAuthError('authSignupError', 'authSignupPhone', 'No account found! Please Sign Up.');
+      return;
+    }
+
+    if(String(user.pin) !== String(pin)){
+      showAuthError('authLoginError', 'authLoginPin', 'Incorrect PIN! Please try again.');
+      return;
+    }
+
+    localStorage.setItem('wte_phone', phone);
+    localStorage.setItem('wte_pin', pin);
+    localStorage.setItem('wte_birth_year', user.birthYear || '');
+    if(user.name) localStorage.setItem('wte_name', user.name);
+
+    if(typeof user.coins === 'number'){
+      balance = user.coins;
+      saveBalance();
+    }
+
+    restoreCloudDailyLimits(user);
+
+    $('authOverlay').style.display = 'none';
+    updateProfileDisplay();
+    toast('✅ Welcome back!');
+  })
+  .catch(function(){
+    btn.disabled = false;
+    btn.textContent = 'SECURE LOGIN';
+    showAuthError('authLoginError', 'authLoginPhone', 'Network error. Try again.');
+  });
+};
+
+window.handleResetPin=function(){
+clearAuthErrors();
+var phone = $('authForgotPhone').value.trim();
+var birthYear = $('authForgotBirthYear').value.trim();
+var newPin = $('authForgotNewPin').value.trim();
+
+if(phone.length !== 10 || isNaN(phone)){
+  showAuthError('authForgotError', 'authForgotPhone', 'Enter registered 10-digit number');
+  return;
+}
+if(!birthYear || isNaN(birthYear)){
+  showAuthError('authForgotError', 'authForgotBirthYear', 'Enter your registered Birth Year');
+  return;
+}
+if(newPin.length !== 4 || isNaN(newPin)){
+  showAuthError('authForgotError', 'authForgotNewPin', 'New PIN must be 4 digits');
+  return;
+}
+
+var btn = $('btnSubmitForgot');
+btn.disabled = true;
+btn.textContent = 'Verifying...';
+
+fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
+  .then(function(res){ return res.json(); })
+  .then(function(user){
+    if(!user){
       btn.disabled = false;
-      btn.textContent = 'SECURE LOGIN';
+      btn.textContent = 'RESET & LOGIN';
+      showAuthError('authForgotError', 'authForgotPhone', 'Account not found with this number');
+      return;
+    }
 
-      if(!user){
-        switchAuthTab('signup');
-        $('authSignupPhone').value = phone;
-        showAuthError('authSignupError', 'authSignupPhone', 'No account found! Please Sign Up.');
-        return;
-      }
+    if(String(user.birthYear) !== String(birthYear)){
+      btn.disabled = false;
+      btn.textContent = 'RESET & LOGIN';
+      showAuthError('authForgotError', 'authForgotBirthYear', 'Incorrect Birth Year verification!');
+      return;
+    }
 
-      if(String(user.pin) !== String(pin)){
-        showAuthError('authLoginError', 'authLoginPin', 'Incorrect PIN! Please try again.');
-        return;
-      }
-
+    fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin: newPin })
+    }).then(function(){
       localStorage.setItem('wte_phone', phone);
-      localStorage.setItem('wte_pin', pin);
-      localStorage.setItem('wte_birth_year', user.birthYear || '');
-      if(user.name) localStorage.setItem('wte_name', user.name);
-
+      localStorage.setItem('wte_pin', newPin);
       if(typeof user.coins === 'number'){
         balance = user.coins;
         saveBalance();
       }
-
       restoreCloudDailyLimits(user);
-
       $('authOverlay').style.display = 'none';
-      updateProfileDisplay();
-      toast('✅ Welcome back!');
-    })
-    .catch(function(){
-      btn.disabled = false;
-      btn.textContent = 'SECURE LOGIN';
-      showAuthError('authLoginError', 'authLoginPhone', 'Network error. Try again.');
-    });
-};
-
-window.handleResetPin=function(){
-  clearAuthErrors();
-  var phone = $('authForgotPhone').value.trim();
-  var birthYear = $('authForgotBirthYear').value.trim();
-  var newPin = $('authForgotNewPin').value.trim();
-
-  if(phone.length !== 10 || isNaN(phone)){
-    showAuthError('authForgotError', 'authForgotPhone', 'Enter registered 10-digit number');
-    return;
-  }
-  if(!birthYear || isNaN(birthYear)){
-    showAuthError('authForgotError', 'authForgotBirthYear', 'Enter your registered Birth Year');
-    return;
-  }
-  if(newPin.length !== 4 || isNaN(newPin)){
-    showAuthError('authForgotError', 'authForgotNewPin', 'New PIN must be 4 digits');
-    return;
-  }
-
-  var btn = $('btnSubmitForgot');
-  btn.disabled = true;
-  btn.textContent = 'Verifying...';
-
-  fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
-    .then(function(res){ return res.json(); })
-    .then(function(user){
-      if(!user){
-        btn.disabled = false;
-        btn.textContent = 'RESET & LOGIN';
-        showAuthError('authForgotError', 'authForgotPhone', 'Account not found with this number');
-        return;
-      }
-
-      if(String(user.birthYear) !== String(birthYear)){
-        btn.disabled = false;
-        btn.textContent = 'RESET & LOGIN';
-        showAuthError('authForgotError', 'authForgotBirthYear', 'Incorrect Birth Year verification!');
-        return;
-      }
-
-      fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin: newPin })
-      }).then(function(){
-        localStorage.setItem('wte_phone', phone);
-        localStorage.setItem('wte_pin', newPin);
-        if(typeof user.coins === 'number'){
-          balance = user.coins;
-          saveBalance();
-        }
-        restoreCloudDailyLimits(user);
-        $('authOverlay').style.display = 'none';
-        btn.disabled = false;
-        btn.textContent = 'RESET & LOGIN';
-        updateProfileDisplay();
-        toast('🎉 PIN reset successfully! Logged in.');
-      }).catch(function(){
-        btn.disabled = false;
-        btn.textContent = 'RESET & LOGIN';
-        showAuthError('authForgotError', 'authForgotNewPin', 'Failed to update PIN. Try again.');
-      });
-    })
-    .catch(function(){
       btn.disabled = false;
       btn.textContent = 'RESET & LOGIN';
-      showAuthError('authForgotError', 'authForgotPhone', 'Network connection error.');
+      updateProfileDisplay();
+      toast('🎉 PIN reset successfully! Logged in.');
+    }).catch(function(){
+      btn.disabled = false;
+      btn.textContent = 'RESET & LOGIN';
+      showAuthError('authForgotError', 'authForgotNewPin', 'Failed to update PIN. Try again.');
     });
+  })
+  .catch(function(){
+    btn.disabled = false;
+    btn.textContent = 'RESET & LOGIN';
+    showAuthError('authForgotError', 'authForgotPhone', 'Network connection error.');
+  });
 };
 
 /* ==============================================
    MODERN LOGOUT MODAL CONTROLS
    ============================================== */
 window.openLogoutDialog=function(){
-  $('logoutDialog').style.display = 'flex';
+$('logoutDialog').style.display = 'flex';
 };
 
 window.closeLogoutDialog=function(){
-  $('logoutDialog').style.display = 'none';
+$('logoutDialog').style.display = 'none';
 };
 
 window.confirmLogout=function(){
-  closeLogoutDialog();
-  localStorage.removeItem('wte_phone');
-  localStorage.removeItem('wte_pin');
-  $('authOverlay').style.display = 'flex';
-  switchAuthTab('login');
-  $('authLoginPhone').value = '';$('authLoginPin').value = '';
-  updateProfileDisplay();
-  toast('Logged out successfully');
+closeLogoutDialog();
+localStorage.removeItem('wte_phone');
+localStorage.removeItem('wte_pin');
+$('authOverlay').style.display = 'flex';
+switchAuthTab('login');
+$('authLoginPhone').value = '';$('authLoginPin').value = '';
+updateProfileDisplay();
+toast('Logged out successfully');
 };
 
 /* Anti-Cheat: Cloud Daily Limits Restore */
 function restoreCloudDailyLimits(userData){
-  if(!userData) return;
-  var today = day();
-  if(userData.bonusDate === today){
-    localStorage.setItem('wte_bonus_date', today);
-  }
-  if(userData.spinDate === today && typeof userData.spinCount === 'number'){
-    localStorage.setItem('wte_spin_date', today);
-    localStorage.setItem('wte_spin_count', String(userData.spinCount));
-  }
-  if(userData.watchDate === today && typeof userData.watchCount === 'number'){
-    localStorage.setItem('wte_watch_date', today);
-    localStorage.setItem('wte_watch_count', String(userData.watchCount));
-  }
-  if(userData.surpriseTime && typeof userData.surpriseTime === 'number'){
-    localStorage.setItem('wte_surprise_time', String(userData.surpriseTime));
-  }
-  updateSpin();
-  checkBonusState();
-  checkSurpriseBoxState();
-  updateWatchButtonState();
+if(!userData) return;
+var today = day();
+if(userData.bonusDate === today){
+  localStorage.setItem('wte_bonus_date', today);
+}
+if(userData.spinDate === today && typeof userData.spinCount === 'number'){
+  localStorage.setItem('wte_spin_date', today);
+  localStorage.setItem('wte_spin_count', String(userData.spinCount));
+}
+if(userData.watchDate === today && typeof userData.watchCount === 'number'){
+  localStorage.setItem('wte_watch_date', today);
+  localStorage.setItem('wte_watch_count', String(userData.watchCount));
+}
+if(userData.surpriseTime && typeof userData.surpriseTime === 'number'){
+  localStorage.setItem('wte_surprise_time', String(userData.surpriseTime));
+}
+updateSpin();
+checkBonusState();
+checkSurpriseBoxState();
+updateWatchButtonState();
 }
 
 function checkUserAuth(){
-  var activePhone = localStorage.getItem('wte_phone');
-  if(!activePhone){
-    $('authOverlay').style.display = 'flex';
-    switchAuthTab('login');
-  } else {
-    $('authOverlay').style.display = 'none';
-    fetch(FIREBASE_USERS_URL + "/" + activePhone + ".json")
-      .then(function(res){ return res.json(); })
-      .then(function(user){
-        if(user){
-          if(typeof user.coins === 'number'){
-            balance = user.coins;
-            localStorage.setItem('wte_coins', String(balance));
-            $('balance').textContent = balance;
-            if($('withdrawBalance'))$('withdrawBalance').textContent = balance;
-          }
-          restoreCloudDailyLimits(user);
+var activePhone = localStorage.getItem('wte_phone');
+if(!activePhone){
+  $('authOverlay').style.display = 'flex';
+  switchAuthTab('login');
+} else {
+  $('authOverlay').style.display = 'none';
+  fetch(FIREBASE_USERS_URL + "/" + activePhone + ".json")
+    .then(function(res){ return res.json(); })
+    .then(function(user){
+      if(user){
+        if(typeof user.coins === 'number'){
+          balance = user.coins;
+          localStorage.setItem('wte_coins', String(balance));
+          $('balance').textContent = balance;
+          if($('withdrawBalance'))$('withdrawBalance').textContent = balance;
         }
-      }).catch(function(){});
-  }
-  updateProfileDisplay();
+        restoreCloudDailyLimits(user);
+      }
+    }).catch(function(){});
+}
+updateProfileDisplay();
 }
 
 function updateProfileDisplay(){
-  var p = localStorage.getItem('wte_phone');
-  var el = $('profilePhoneDisplay');
-  if(el){
-    el.textContent = p ? '+91 ' + p : 'Not Logged In';
-  }
+var p = localStorage.getItem('wte_phone');
+var el = $('profilePhoneDisplay');
+if(el){
+  el.textContent = p ? '+91 ' + p : 'Not Logged In';
+}
 }
 
 /* =========================
@@ -2209,11 +2208,11 @@ return;
 localStorage.setItem('wte_name',name);
 var phone = localStorage.getItem('wte_phone');
 if(phone){
-  fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: name })
-  }).catch(function(){});
+fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
+  method: "PATCH",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ name: name })
+}).catch(function(){});
 }
 toast('✅ Profile saved successfully');
 };
