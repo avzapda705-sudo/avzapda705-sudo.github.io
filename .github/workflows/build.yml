@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 54
-                  versionName "7.0"
+                  versionCode 56
+                  versionName "7.2"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -204,10 +204,9 @@ jobs:
               private WebView preloadedVideoWebView;
               private Dialog adDialog;
               private CardView floatingCardAd;
-              private static final String AD_URL = "https://omg10.com/4/11903025";
+              private static final String VIDEO_AD_URL = "https://omg10.com/4/11903025";
               private final Handler handler = new Handler(Looper.getMainLooper());
               private boolean bannerUserClicked = false;
-              private boolean isAdLoading = false;
 
               @SuppressLint("ClickableViewAccessibility")
               @Override
@@ -217,8 +216,17 @@ jobs:
 
                   mainWebView = new WebView(this);
                   setupWeb(mainWebView, false);
-                  mainWebView.setWebViewClient(new SafeWebClient(false, false));
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
+
+                  mainWebView.setWebViewClient(new SafeWebClient(false, false) {
+                      @Override
+                      public void onPageFinished(WebView view, String url) {
+                          super.onPageFinished(view, url);
+                          // Inject Monetag Vignette Banner Script directly into HTML
+                          injectVignetteBanner(view);
+                      }
+                  });
+
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
                   int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 64, getResources().getDisplayMetrics());
@@ -266,7 +274,7 @@ jobs:
                       return false;
                   });
 
-                  bannerWebView.loadUrl(AD_URL);
+                  bannerWebView.loadUrl(VIDEO_AD_URL);
 
                   FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
                   bp.gravity = Gravity.BOTTOM;
@@ -284,7 +292,7 @@ jobs:
                       public void run() {
                           if (!isFinishing() && bannerWebView != null) {
                               bannerWebView.clearCache(true);
-                              String refreshUrl = AD_URL + (AD_URL.contains("?") ? "&" : "?") + "cb=" + System.currentTimeMillis();
+                              String refreshUrl = VIDEO_AD_URL + (VIDEO_AD_URL.contains("?") ? "&" : "?") + "cb=" + System.currentTimeMillis();
                               bannerWebView.loadUrl(refreshUrl);
                           }
                           handler.postDelayed(this, 30000);
@@ -314,6 +322,21 @@ jobs:
                   }, 8000);
               }
 
+              // Injects Vignette Tag (Pure Native Image Pop-up with Close X)
+              private void injectVignetteBanner(WebView view) {
+                  view.evaluateJavascript(
+                      "(function(){" +
+                      "  if (window.vignetteLoaded) return;" +
+                      "  window.vignetteLoaded = true;" +
+                      "  var s = document.createElement('script');" +
+                      "  s.dataset.zone = '11914715';" +
+                      "  s.src = 'https://n6wxm.com/vignette.min.js';" +
+                      "  document.head.appendChild(s);" +
+                      "})();",
+                      null
+                  );
+              }
+
               private void preloadVideoAd() {
                   if (preloadedVideoWebView != null) {
                       try {
@@ -324,7 +347,7 @@ jobs:
                   setupWeb(preloadedVideoWebView, false);
                   preloadedVideoWebView.setBackgroundColor(Color.parseColor("#0b0f19"));
                   preloadedVideoWebView.setWebViewClient(new SafeWebClient(false, true));
-                  preloadedVideoWebView.loadUrl(AD_URL + (AD_URL.contains("?") ? "&" : "?") + "pw=" + System.currentTimeMillis());
+                  preloadedVideoWebView.loadUrl(VIDEO_AD_URL + (VIDEO_AD_URL.contains("?") ? "&" : "?") + "pw=" + System.currentTimeMillis());
               }
 
               private void buildCard(FrameLayout root) {
@@ -426,13 +449,13 @@ jobs:
                           return false;
                       }
 
-                      // Rewarded Video: Complete lockdown inside app dialog
+                      // Rewarded Video / In-App Overlay: Lock inside app dialog
                       if (isRewarded) {
                           if (url.startsWith("http://") || url.startsWith("https://")) {
                               view.loadUrl(url);
                               return true;
                           }
-                          return true; // Block external app redirects completely
+                          return true;
                       }
 
                       if (url.startsWith("intent://")) {
@@ -511,20 +534,19 @@ jobs:
                   tb.addView(cb);
                   l.addView(tb);
 
-                  // Use the preloaded ad view directly for instant display
+                  // Use preloaded ad view directly for instant display
                   final WebView activeAdView;
                   if (preloadedVideoWebView != null) {
                       activeAdView = preloadedVideoWebView;
-                      preloadedVideoWebView = null; // Detach for current dialog
+                      preloadedVideoWebView = null;
                   } else {
                       activeAdView = new WebView(this);
                       setupWeb(activeAdView, false);
                       activeAdView.setBackgroundColor(Color.parseColor("#0b0f19"));
                       activeAdView.setWebViewClient(new SafeWebClient(false, true));
-                      activeAdView.loadUrl(AD_URL);
+                      activeAdView.loadUrl(VIDEO_AD_URL);
                   }
 
-                  // If already in a parent view, remove it
                   if (activeAdView.getParent() != null) {
                       ((ViewGroup) activeAdView.getParent()).removeView(activeAdView);
                   }
@@ -557,7 +579,7 @@ jobs:
                       if (reward && mainWebView != null) {
                           mainWebView.post(() -> mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();}", null));
                       }
-                      // Preload the NEXT ad right away for subsequent clicks
+                      // Preload the next ad right away
                       preloadVideoAd();
                   });
               }
