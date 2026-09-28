@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 48
-                  versionName "6.4"
+                  versionCode 50
+                  versionName "6.6"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -255,7 +255,6 @@ jobs:
                       }
                   });
                   
-                  // Only allow opening external browser if user genuinely touched the banner
                   bannerWebView.setOnTouchListener((v, event) -> {
                       if (event.getAction() == MotionEvent.ACTION_UP) {
                           bannerUserClicked = true;
@@ -273,6 +272,18 @@ jobs:
                   buildCard(root);
                   setContentView(root);
 
+                  // 30-Second Banner Auto-Refresh Loop
+                  handler.postDelayed(new Runnable() {
+                      @Override
+                      public void run() {
+                          if (!isFinishing() && bannerWebView != null) {
+                              bannerWebView.loadUrl(AD_URL);
+                          }
+                          handler.postDelayed(this, 30000);
+                      }
+                  }, 30000);
+
+                  // Floating Bonus Card Loop (Only after user logs in)
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
@@ -290,7 +301,7 @@ jobs:
                                   }
                               );
                           }
-                          handler.postDelayed(this, 30000);
+                          handler.postDelayed(this, 25000);
                       }
                   }, 8000);
               }
@@ -373,7 +384,6 @@ jobs:
                   public boolean shouldOverrideUrlLoading(WebView view, String url) {
                       if (url == null) return false;
 
-                      // Block unwanted automatic Chrome opening; open external browser only if user touched the banner
                       if (isBanner) {
                           if (bannerUserClicked && !url.contains("omg10.com") && (url.startsWith("http://") || url.startsWith("https://"))) {
                               try {
@@ -408,7 +418,8 @@ jobs:
 
                       if (isExternal || isAppRedirect) {
                           try {
-                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                              Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                              intent.setAction(Intent.ACTION_VIEW);
                               startActivity(intent);
                           } catch (Exception ignored) {}
                           return true;
