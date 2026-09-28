@@ -7,186 +7,254 @@
 <title>Watch to Earn</title>
 
 <style>
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{
 margin:0;
-font-family:Arial,sans-serif;
-background:#f3f5fa;
-color:#222;
-padding-bottom:85px
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+background:#f4f6fb;
+color:#1e293b;
+padding-bottom:95px;
+letter-spacing:-0.2px
 }
+
+/* =====================================
+   PREMIUM HERO & HEADER (GLASSMORPHISM)
+   ===================================== */
 .hero{
-background:linear-gradient(135deg,#6d2fc2,#b01fc2);
+background:linear-gradient(145deg,#4f149b,#7c3aed 55%,#9333ea);
 color:#fff;
-padding: calc(env(safe-area-inset-top, 0px) + 48px) 24px 36px;
-border-radius:0 0 42px 42px
+padding:calc(env(safe-area-inset-top, 0px) + 38px) 20px 36px;
+border-radius:0 0 38px 38px;
+box-shadow:0 14px 34px rgba(124,58,237,0.24)
 }
-.hero h1{margin:0 0 8px;font-size:32px}
-.hero p{margin:0 0 28px;font-size:20px}
+.hero h1{margin:0 0 4px;font-size:27px;font-weight:800;letter-spacing:-0.5px}
+.hero p{margin:0 0 24px;font-size:15px;opacity:0.85;font-weight:500}
 .balance{
-background:rgba(255,255,255,.18);
-border-radius:26px;
-padding:20px 22px;
+background:rgba(255,255,255,0.14);
+backdrop-filter:blur(16px);
+-webkit-backdrop-filter:blur(16px);
+border:1px solid rgba(255,255,255,0.24);
+border-radius:24px;
+padding:18px 22px;
 display:flex;
 justify-content:space-between;
-align-items:center
+align-items:center;
+box-shadow:inset 0 1px 1px rgba(255,255,255,0.3)
 }
-.balance small{display:block;font-size:18px}
-.balance strong{font-size:42px}
-.money{font-size:50px}
-.wrap{padding:26px 24px}
+.balance small{display:block;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;opacity:0.9}
+.balance strong{font-size:38px;font-weight:900;letter-spacing:-1px}
+.money{font-size:42px;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.2))}
+
+.wrap{padding:20px 18px}
 .card{
-background:#fff;
-border-radius:28px;
-padding:26px;
-margin-bottom:20px;
-box-shadow:0 5px 20px rgba(0,0,0,.06)
-}
-h2{margin:0 0 14px;font-size:28px}
-.muted{color:#777;font-size:18px;line-height:1.45}
-.video{
-height:240px;
-background:#151515;
-color:#fff;
+background:#ffffff;
 border-radius:24px;
+padding:22px;
+margin-bottom:18px;
+border:1px solid #eef2f6;
+box-shadow:0 8px 24px rgba(15,23,42,0.04)
+}
+h2{margin:0 0 8px;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.4px}
+.muted{color:#64748b;font-size:15px;line-height:1.5}
+
+/* =====================================
+   VIDEO & ACTION BUTTONS
+   ===================================== */
+.video{
+height:210px;
+background:linear-gradient(180deg,#18181b,#09090b);
+color:#fff;
+border-radius:22px;
 display:flex;
 flex-direction:column;
 align-items:center;
 justify-content:center;
-font-size:24px;
-margin:18px 0
+font-size:18px;
+font-weight:700;
+margin:16px 0;
+border:1px solid #27272a;
+box-shadow:inset 0 1px 1px rgba(255,255,255,0.1)
 }
-.video .icon{font-size:48px;margin-bottom:12px}
+.video .icon{font-size:44px;margin-bottom:8px}
 .btn{
 width:100%;
 border:0;
-border-radius:18px;
-padding:17px;
-background:linear-gradient(90deg,#7132c4,#b129c1);
+border-radius:16px;
+padding:16px;
+background:linear-gradient(135deg,#7c3aed,#9333ea);
 color:#fff;
-font-weight:bold;
-font-size:20px;
-cursor:pointer
+font-weight:800;
+font-size:16px;
+letter-spacing:0.4px;
+cursor:pointer;
+box-shadow:0 6px 18px rgba(124,58,237,0.32);
+transition:all .15s ease
 }
-.btn:disabled{opacity:.55}
+.btn:active{transform:scale(0.98);box-shadow:0 2px 8px rgba(124,58,237,0.25)}
+.btn:disabled{opacity:.55;box-shadow:none}
+
+/* =====================================
+   BOTTOM NAVIGATION BAR
+   ===================================== */
 .nav{
 position:fixed;
 bottom:0;
 left:0;
 right:0;
-background:#fff;
+background:rgba(255,255,255,0.92);
+backdrop-filter:blur(16px);
+-webkit-backdrop-filter:blur(16px);
 display:flex;
 justify-content:space-around;
-padding:10px 4px 8px;
-box-shadow:0 -4px 18px rgba(0,0,0,.12);
-z-index:20
+padding:10px 4px calc(env(safe-area-inset-bottom, 0px) + 8px);
+box-shadow:0 -6px 24px rgba(15,23,42,0.06);
+border-top:1px solid rgba(226,232,240,0.8);
+z-index:90
 }
 .nav button{
 background:none;
 border:0;
-font-size:12px;
-color:#666;
-font-weight:bold
+font-size:11px;
+color:#64748b;
+font-weight:700;
+cursor:pointer;
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:2px;
+transition:color .2s ease
 }
-.nav button b{display:block;font-size:22px;margin-bottom:2px}
+.nav button b{font-size:21px;line-height:1;margin-bottom:2px}
+.nav button:active{color:#7c3aed}
+
 .page{display:none}
 .page.active{display:block}
+
+/* =====================================
+   INPUTS & CARDS
+   ===================================== */
 .input{
 width:100%;
-padding:17px;
-border:1px solid #ddd;
-border-radius:16px;
-font-size:18px;
-margin:10px 0 15px
+padding:15px 16px;
+background:#f8fafc;
+border:1.5px solid #e2e8f0;
+border-radius:15px;
+font-size:16px;
+font-weight:600;
+color:#0f172a;
+margin:10px 0 14px;
+outline:none;
+transition:border-color .2s ease
 }
+.input:focus{border-color:#7c3aed;background:#fff}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .stat{
-background:#f4efff;
+background:#f8fafc;
+border:1px solid #e2e8f0;
 border-radius:18px;
-padding:15px;
+padding:16px 12px;
 text-align:center
 }
-.stat strong{font-size:25px;display:block}
+.stat strong{font-size:22px;font-weight:800;color:#7c3aed;display:block}
+.stat span{font-size:13px;font-weight:600;color:#64748b}
+
 .wheelbox{text-align:center;position:relative;margin:15px auto}
 .wheel{
-width:min(330px,85vw);
-height:min(330px,85vw);
+width:min(320px,82vw);
+height:min(320px,82vw);
 margin:auto;
 transition:transform 4.2s cubic-bezier(.15,.7,.15,1);
-filter:drop-shadow(0 8px 10px rgba(0,0,0,.15))
+filter:drop-shadow(0 10px 18px rgba(0,0,0,0.14))
 }
 .pointer{
 position:absolute;
-top:-5px;
+top:-8px;
 left:50%;
 transform:translateX(-50%);
-font-size:35px;
+font-size:32px;
 z-index:2
 }
 .refbox{
-background:#f6f0ff;
-border-radius:18px;
-padding:16px;
+background:#f8fafc;
+border:1.5px dashed #cbd5e1;
+border-radius:16px;
+padding:14px;
 word-break:break-all;
-font-size:15px
+font-size:14px;
+font-weight:600;
+color:#475569
 }
-.history{padding:13px 0;border-bottom:1px solid #eee}
+.history{
+padding:14px 0;
+border-bottom:1px solid #f1f5f9;
+font-size:14px;
+line-height:1.5;
+color:#334155
+}
+.history b{color:#0f172a}
 .toast{
 position:fixed;
 left:50%;
-bottom:90px;
+bottom:95px;
 transform:translateX(-50%);
-background:#222;
+background:#0f172a;
 color:#fff;
-padding:13px 18px;
-border-radius:14px;
+padding:12px 20px;
+border-radius:30px;
 display:none;
 z-index:100;
-font-weight:bold
+font-size:14px;
+font-weight:700;
+box-shadow:0 8px 24px rgba(0,0,0,0.25)
 }
 .notice{
-background:#fff4d6;
-padding:12px;
+background:#fffbeb;
+border:1px solid #fef3c7;
+color:#92400e;
+padding:12px 14px;
 border-radius:14px;
-font-size:14px;
+font-size:13px;
+font-weight:600;
 margin-top:12px
 }
 .rare{
-background:linear-gradient(90deg,#fff1b8,#ffe08a);
-padding:13px;
-border-radius:15px;
-margin-top:14px;
+background:linear-gradient(135deg,#fef3c7,#fde68a);
+padding:12px;
+border-radius:14px;
+margin-top:12px;
 text-align:center;
-font-weight:bold;
-color:#7a5600
+font-weight:800;
+color:#854d0e;
+font-size:14px
 }
 
 /* =====================================
-   LIVE TICKER & SUPPORT STYLES
+   LIVE TICKER & CASHOUT BADGES
    ===================================== */
 .live-ticker-wrap{
-background:#1e1035;
-color:#00ff88;
-padding:11px 16px;
+background:#0f172a;
+color:#38bdf8;
+padding:10px 14px;
 border-radius:16px;
-margin-bottom:18px;
+margin-bottom:16px;
 display:flex;
 align-items:center;
 overflow:hidden;
-font-size:15px;
-font-weight:bold;
-box-shadow:0 4px 14px rgba(0,0,0,.08)
+font-size:14px;
+font-weight:700;
+box-shadow:0 6px 16px rgba(15,23,42,0.12)
 }
 .ticker-badge{
-background:#00ff88;
-color:#111;
+background:#10b981;
+color:#fff;
 font-size:11px;
-padding:4px 8px;
-border-radius:8px;
+padding:3px 8px;
+border-radius:6px;
 margin-right:10px;
 white-space:nowrap;
 text-transform:uppercase;
-font-weight:900
+font-weight:900;
+letter-spacing:0.5px
 }
 .ticker-marquee{
 white-space:nowrap;
@@ -204,32 +272,30 @@ animation:tickerScroll 22s linear infinite
 100%{transform:translateX(-100%)}
 }
 .rate-badge{
-background:linear-gradient(90deg,#efe6ff,#f9f5ff);
-border:1.5px dashed #8738d4;
+background:#faf5ff;
+border:1.5px dashed #c084fc;
 border-radius:16px;
-padding:12px 16px;
+padding:14px 16px;
 margin:14px 0;
-font-size:15px;
-color:#5b1e9c;
 display:flex;
 flex-direction:column;
 align-items:flex-start;
-gap:6px;
-font-weight:bold
+gap:6px
 }
 .support-card{
-background:#faf8ff;
-border:1px solid #ebdfff;
+background:#f8fafc;
+border:1px solid #e2e8f0;
 border-radius:20px;
 padding:18px;
-margin-top:20px
+margin-top:18px
 }
 .faq-item{
-margin-bottom:12px;
-font-size:14px;
-line-height:1.45
+margin-bottom:10px;
+font-size:13.5px;
+line-height:1.5;
+color:#475569
 }
-.faq-item b{color:#5b1e9c}
+.faq-item b{color:#0f172a}
 </style>
 </head>
 
@@ -948,7 +1014,7 @@ el.innerHTML='<div class="muted">No withdrawal history available.</div>';
 return;
 }
 
-el.innerHTML='<h3>Withdrawal History</h3>'+h.map(function(x){
+el.innerHTML='<h3 style="margin:16px 0 8px;font-size:18px;font-weight:800;color:#0f172a">Withdrawal History</h3>'+h.map(function(x){
 var statusColor = (x.status === 'Success' || x.status === 'Completed') ? '#16a34a' : (x.status === 'Rejected' ? '#dc2626' : '#d97706');
 var statusIcon = (x.status === 'Success' || x.status === 'Completed') ? '✅ ' : '';
 var inrText = x.inr ? ' ('+x.inr+')' : ' (₹' + (x.amount/200).toFixed(1) + ')';
