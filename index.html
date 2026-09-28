@@ -67,7 +67,7 @@ margin:0;
 font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 background:var(--bg-color);
 color:var(--text-main);
-padding-bottom:140px; /* ક્લિયર સ્પેસ જેથી કાર્ડ ક્યારેય અડે નહીં */
+padding-bottom:120px;
 letter-spacing:-0.2px;
 transition:background .3s ease, color .3s ease
 }
@@ -382,7 +382,7 @@ margin-top:18px
 .toast{
 position:fixed;
 left:50%;
-bottom:110px;
+bottom:85px;
 transform:translateX(-50%);
 background:var(--toast-bg);
 color:var(--toast-color);
@@ -396,7 +396,7 @@ box-shadow:0 10px 30px rgba(0,0,0,0.3)
 }
 
 /* ==============================================
-   CLEAN SEPARATED BOTTOM NAVIGATION DOCK
+   CLEAN SEPARATED BOTTOM NAVIGATION DOCK (FIXED LOW PROFILE)
    ============================================== */
 .nav{
 position:fixed;
@@ -407,16 +407,16 @@ background:var(--nav-bg);
 display:flex;
 justify-content:space-around;
 align-items:center;
-padding:10px 4px calc(env(safe-area-inset-bottom, 0px) + 8px);
-border-top:1.5px solid var(--nav-border);
+padding:2px 4px calc(env(safe-area-inset-bottom, 0px) + 2px);
+border-top:1px solid var(--nav-border);
 z-index:90;
-box-shadow:0 -8px 24px rgba(0,0,0,0.65);
-height:70px;
+box-shadow:0 -4px 16px rgba(0,0,0,0.5);
+height:56px;
 }
 .nav button{
 background:none;
 border:0;
-font-size:12px;
+font-size:11px;
 color:var(--text-muted);
 font-weight:700;
 cursor:pointer;
@@ -424,15 +424,15 @@ display:flex;
 flex-direction:column;
 align-items:center;
 justify-content:center;
-gap:4px;
+gap:2px;
 flex:1;
-padding:6px 0;
-border-radius:14px;
+padding:2px 0;
+border-radius:10px;
 position:relative;
 transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .nav button b{
-font-size:23px;
+font-size:19px;
 line-height:1;
 display:block;
 transition:transform .2s ease, filter .2s ease;
@@ -445,18 +445,18 @@ color:#c084fc;
 font-weight:900;
 }
 .nav button.nav-active b{
-transform:translateY(-2px) scale(1.12);
-filter:drop-shadow(0 0 10px rgba(192,132,252,0.65));
+transform:translateY(-1px) scale(1.08);
+filter:drop-shadow(0 0 8px rgba(192,132,252,0.6));
 }
 .nav button.nav-active::after{
 content:'';
 position:absolute;
-bottom:-3px;
-width:18px;
-height:3.5px;
+bottom:-1px;
+width:14px;
+height:3px;
 background:linear-gradient(90deg,#8b5cf6,#d946ef);
 border-radius:6px;
-box-shadow:0 0 8px rgba(168,85,247,0.7);
+box-shadow:0 0 6px rgba(168,85,247,0.7);
 }
 
 .page{display:none}
@@ -943,7 +943,7 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
 
 
 <!-- ==============================================
-     BOTTOM NAVIGATION BAR (PERFECTED ORDER)
+     BOTTOM NAVIGATION BAR (PERFECT LOW PROFILE DOCK)
      ============================================== -->
 <nav class="nav" id="bottomNav">
 <button class="nav-active" onclick="showPage('home')">
@@ -997,7 +997,7 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
           <circle cx="256" cy="256" r="248" fill="url(#authBgGlow)"/>
           <circle cx="256" cy="256" r="244" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="6"/>
           <circle cx="256" cy="256" r="236" fill="none" stroke="rgba(129,140,248,0.25)" stroke-width="2"/>
-          <path d="M165 145 C165 130 182 120 195 128 L345 228 C357 236 357 254 345 262 L195 362 C182 370 165 360 165 345 Z" fill="url(#authPlayGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="5"/>
+          <path d="M165 145 C165 130 182 120 195 128 L345 228 C357 236 357 254 345 262 L195 362 C182 370 165 360 165 345 Z" fill="url(#topPlayGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="5"/>
           <path d="M110 320 C110 405 210 455 315 440" fill="none" stroke="url(#authGoldGrad)" stroke-width="12" stroke-linecap="round" opacity="0.85"/>
           <circle cx="340" cy="315" r="105" fill="url(#authGoldGrad)" stroke="#ffffff" stroke-width="6"/>
           <circle cx="340" cy="315" r="88" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-dasharray="8,6"/>
