@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 60
-                  versionName "7.6"
+                  versionCode 61
+                  versionName "7.7"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -224,7 +224,6 @@ jobs:
                       @Override
                       public void onPageFinished(WebView view, String url) {
                           super.onPageFinished(view, url);
-                          // Exact hook into index.html's showPage function
                           hookShowPage(view);
                       }
                   });
@@ -236,7 +235,7 @@ jobs:
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
 
-                  // Bottom Banner
+                  // Live Bottom Banner
                   bannerWebView = new WebView(this);
                   setupWeb(bannerWebView, true);
                   bannerWebView.getSettings().setLoadWithOverviewMode(true);
@@ -300,7 +299,7 @@ jobs:
                       }
                   }, 30000);
 
-                  // Floating Bonus Loop (Never on Login)
+                  // Floating Bonus Loop (Never on Login Screen)
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
@@ -323,7 +322,7 @@ jobs:
                   }, 8000);
               }
 
-              // Precise hook on showPage: Trigger ad ONLY on earn, withdraw, referral
+              // Hook into index.html: Show ad ONLY when user clicks Earn, Withdraw, or Referral
               private void hookShowPage(WebView view) {
                   view.evaluateJavascript(
                       "(function(){" +
@@ -335,7 +334,7 @@ jobs:
                       "    var auth = document.getElementById('authOverlay');" +
                       "    var isLoggedIn = !(auth && auth.style.display !== 'none');" +
                       "    if (isLoggedIn && ['earn', 'withdraw', 'referral'].includes(pageId)) {" +
-                      "      if (window.AndroidAd) { window.AndroidAd.showNavigationAd(); }" +
+                      "      if (window.AndroidAd) { window.AndroidAd.showCleanVignette(); }" +
                       "    }" +
                       "  };" +
                       "})();",
@@ -505,40 +504,46 @@ jobs:
                   public void showRewarded() { runOnUiThread(() -> showAd(true)); }
 
                   @JavascriptInterface
-                  public void showNavigationAd() {
-                      runOnUiThread(() -> showInterstitialAd());
+                  public void showCleanVignette() {
+                      runOnUiThread(() -> showPureVignetteDialog());
                   }
               }
 
-              // Pure Fullscreen Interstitial Image Ad with instant Close Button for Navigation
-              private void showInterstitialAd() {
+              // Loads purely the official clean Vignette Banner (No Smartlink redirect, No Adult/Dating ads)
+              private void showPureVignetteDialog() {
                   if (isFinishing()) return;
                   long now = System.currentTimeMillis();
-                  if (now - lastInterstitialTime < 10000) return; // 10s cooldown
+                  if (now - lastInterstitialTime < 10000) return; // 10-Second interval
                   lastInterstitialTime = now;
 
-                  interstitialDialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+                  interstitialDialog = new Dialog(this, android.R.style.Theme_Translucent_NoTitleBar);
                   interstitialDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
                   interstitialDialog.setCancelable(true);
 
                   FrameLayout layout = new FrameLayout(this);
-                  layout.setBackgroundColor(Color.parseColor("#0b0f19"));
+                  layout.setBackgroundColor(Color.parseColor("#99000000")); // Clean dim background
 
-                  WebView imgWv = new WebView(this);
-                  setupWeb(imgWv, true);
-                  imgWv.setBackgroundColor(Color.parseColor("#0b0f19"));
-                  imgWv.setWebViewClient(new SafeWebClient(false, true));
-                  // Fresh request with unique timestamp every time
-                  imgWv.loadUrl(VIDEO_AD_URL + (VIDEO_AD_URL.contains("?") ? "&" : "?") + "tab=" + System.currentTimeMillis());
-                  layout.addView(imgWv, new FrameLayout.LayoutParams(-1, -1));
+                  WebView vigWv = new WebView(this);
+                  setupWeb(vigWv, true);
+                  vigWv.setBackgroundColor(Color.TRANSPARENT);
+                  vigWv.setWebViewClient(new SafeWebClient(false, false));
+
+                  String selectedZone = (now % 2 == 0) ? "11914761" : "11914715";
+                  String htmlContent = "<!DOCTYPE html><html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+                          "<script src='https://n6wxm.com/vignette.min.js' data-zone='" + selectedZone + "' data-sdk='show'></script>" +
+                          "<style>html,body{background:transparent;margin:0;padding:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;}</style>" +
+                          "</head><body></body></html>";
+
+                  vigWv.loadDataWithBaseURL("https://watchtoearn.app", htmlContent, "text/html", "UTF-8", null);
+                  layout.addView(vigWv, new FrameLayout.LayoutParams(-1, -1));
 
                   // Clear Red Close Button on Top Right Corner
                   Button closeBtn = new Button(this);
                   closeBtn.setText("✖ CLOSE");
                   closeBtn.setTextColor(Color.WHITE);
-                  closeBtn.setTextSize(14);
+                  closeBtn.setTextSize(13);
                   closeBtn.setBackgroundColor(Color.parseColor("#EF4444"));
-                  closeBtn.setPadding(32, 14, 32, 14);
+                  closeBtn.setPadding(28, 12, 28, 12);
 
                   FrameLayout.LayoutParams btnLp = new FrameLayout.LayoutParams(-2, -2);
                   btnLp.gravity = Gravity.TOP | Gravity.END;
@@ -552,8 +557,8 @@ jobs:
                   closeBtn.setOnClickListener(v -> {
                       if (interstitialDialog != null && interstitialDialog.isShowing()) {
                           try {
-                              imgWv.loadUrl("about:blank");
-                              imgWv.destroy();
+                              vigWv.loadUrl("about:blank");
+                              vigWv.destroy();
                           } catch (Exception ignored) {}
                           interstitialDialog.dismiss();
                       }
