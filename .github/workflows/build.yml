@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 46
-                  versionName "6.2"
+                  versionCode 47
+                  versionName "6.3"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -223,10 +223,36 @@ jobs:
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
 
-                  // Real Monetag Live Banner Strip
+                  // Real Monetag Live Banner Strip (Centered & Mobile Fitted)
                   bannerWebView = new WebView(this);
                   setupWeb(bannerWebView);
-                  bannerWebView.setWebViewClient(new SafeWebClient(true));
+                  bannerWebView.getSettings().setLoadWithOverviewMode(true);
+                  bannerWebView.getSettings().setUseWideViewPort(true);
+                  bannerWebView.getSettings().setTextZoom(85);
+                  bannerWebView.setHorizontalScrollBarEnabled(false);
+                  bannerWebView.setVerticalScrollBarEnabled(false);
+                  bannerWebView.setBackgroundColor(Color.parseColor("#0b0f19"));
+
+                  bannerWebView.setWebViewClient(new SafeWebClient(true) {
+                      @Override
+                      public void onPageFinished(WebView view, String url) {
+                          super.onPageFinished(view, url);
+                          view.evaluateJavascript(
+                              "(function(){" +
+                              "try{" +
+                              "document.body.style.margin='0';" +
+                              "document.body.style.padding='0';" +
+                              "document.body.style.display='flex';" +
+                              "document.body.style.justifyContent='center';" +
+                              "document.body.style.alignItems='center';" +
+                              "document.body.style.overflow='hidden';" +
+                              "document.body.style.background='#0b0f19';" +
+                              "}catch(e){}" +
+                              "})();",
+                              null
+                          );
+                      }
+                  });
                   
                   // Only allow opening external browser if user genuinely touched the banner
                   bannerWebView.setOnTouchListener((v, event) -> {
