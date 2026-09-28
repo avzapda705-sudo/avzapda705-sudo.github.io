@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 58
-                  versionName "7.4"
+                  versionCode 60
+                  versionName "7.6"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -203,11 +203,12 @@ jobs:
               private WebView bannerWebView;
               private WebView preloadedVideoWebView;
               private Dialog adDialog;
+              private Dialog interstitialDialog;
               private CardView floatingCardAd;
               private static final String VIDEO_AD_URL = "https://omg10.com/4/11903025";
               private final Handler handler = new Handler(Looper.getMainLooper());
               private boolean bannerUserClicked = false;
-              private long lastImageAdTrigger = 0;
+              private long lastInterstitialTime = 0;
 
               @SuppressLint("ClickableViewAccessibility")
               @Override
@@ -223,7 +224,8 @@ jobs:
                       @Override
                       public void onPageFinished(WebView view, String url) {
                           super.onPageFinished(view, url);
-                          injectVignetteSystem(view);
+                          // Exact hook into index.html's showPage function
+                          hookShowPage(view);
                       }
                   });
 
@@ -234,7 +236,7 @@ jobs:
                   wp.bottomMargin = bHeight;
                   root.addView(mainWebView, wp);
 
-                  // Live Bottom Banner
+                  // Bottom Banner
                   bannerWebView = new WebView(this);
                   setupWeb(bannerWebView, true);
                   bannerWebView.getSettings().setLoadWithOverviewMode(true);
@@ -285,7 +287,7 @@ jobs:
 
                   preloadVideoAd();
 
-                  // 30-Second Banner Refresh
+                  // 30-Sec Banner Refresh Loop
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
@@ -298,7 +300,7 @@ jobs:
                       }
                   }, 30000);
 
-                  // Floating Bonus Loop
+                  // Floating Bonus Loop (Never on Login)
                   handler.postDelayed(new Runnable() {
                       @Override
                       public void run() {
@@ -321,35 +323,21 @@ jobs:
                   }, 8000);
               }
 
-              // Injects dual zones and triggers fresh vignette ad
-              private void injectVignetteSystem(WebView view) {
+              // Precise hook on showPage: Trigger ad ONLY on earn, withdraw, referral
+              private void hookShowPage(WebView view) {
                   view.evaluateJavascript(
                       "(function(){" +
-                      "  function loadTag(zoneId) {" +
-                      "    var s = document.createElement('script');" +
-                      "    s.dataset.zone = zoneId;" +
-                      "    s.src = 'https://n6wxm.com/vignette.min.js?cb=' + Date.now();" +
-                      "    document.head.appendChild(s);" +
-                      "  }" +
-                      "  loadTag('11914715');" +
-                      "  loadTag('11914761');" +
-                      "  function hookButtons() {" +
-                      "    var items = document.querySelectorAll('*');" +
-                      "    items.forEach(function(el) {" +
-                      "      var t = (el.innerText || '').trim().toLowerCase();" +
-                      "      if (['earn', 'refer', 'withdraw'].includes(t) && el.children.length === 0) {" +
-                      "        var btn = el.closest('button') || el.closest('a') || el.closest('div');" +
-                      "        if (btn && !btn.dataset.vignetteHooked) {" +
-                      "          btn.dataset.vignetteHooked = 'true';" +
-                      "          btn.addEventListener('click', function() {" +
-                      "            if (window.AndroidAd) { window.AndroidAd.triggerTabAd(); }" +
-                      "          }, true);" +
-                      "        }" +
-                      "      }" +
-                      "    });" +
-                      "  }" +
-                      "  hookButtons();" +
-                      "  setInterval(hookButtons, 2000);" +
+                      "  if (window._pageHooked) return;" +
+                      "  window._pageHooked = true;" +
+                      "  var originalShow = window.showPage;" +
+                      "  window.showPage = function(pageId) {" +
+                      "    if (typeof originalShow === 'function') { originalShow(pageId); }" +
+                      "    var auth = document.getElementById('authOverlay');" +
+                      "    var isLoggedIn = !(auth && auth.style.display !== 'none');" +
+                      "    if (isLoggedIn && ['earn', 'withdraw', 'referral'].includes(pageId)) {" +
+                      "      if (window.AndroidAd) { window.AndroidAd.showNavigationAd(); }" +
+                      "    }" +
+                      "  };" +
                       "})();",
                       null
                   );
@@ -517,26 +505,59 @@ jobs:
                   public void showRewarded() { runOnUiThread(() -> showAd(true)); }
 
                   @JavascriptInterface
-                  public void triggerTabAd() {
-                      runOnUiThread(() -> {
-                          long now = System.currentTimeMillis();
-                          // 10-Second interval for navigation tabs
-                          if (now - lastImageAdTrigger >= 10000 && mainWebView != null) {
-                              lastImageAdTrigger = now;
-                              mainWebView.evaluateJavascript(
-                                  "(function(){" +
-                                  "  try {" +
-                                  "    var s = document.createElement('script');" +
-                                  "    s.dataset.zone = '" + (now % 2 == 0 ? "11914761" : "11914715") + "';" +
-                                  "    s.src = 'https://n6wxm.com/vignette.min.js?cb=' + Date.now();" +
-                                  "    document.head.appendChild(s);" +
-                                  "  } catch(e) {}" +
-                                  "})();",
-                                  null
-                              );
-                          }
-                      });
+                  public void showNavigationAd() {
+                      runOnUiThread(() -> showInterstitialAd());
                   }
+              }
+
+              // Pure Fullscreen Interstitial Image Ad with instant Close Button for Navigation
+              private void showInterstitialAd() {
+                  if (isFinishing()) return;
+                  long now = System.currentTimeMillis();
+                  if (now - lastInterstitialTime < 10000) return; // 10s cooldown
+                  lastInterstitialTime = now;
+
+                  interstitialDialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+                  interstitialDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                  interstitialDialog.setCancelable(true);
+
+                  FrameLayout layout = new FrameLayout(this);
+                  layout.setBackgroundColor(Color.parseColor("#0b0f19"));
+
+                  WebView imgWv = new WebView(this);
+                  setupWeb(imgWv, true);
+                  imgWv.setBackgroundColor(Color.parseColor("#0b0f19"));
+                  imgWv.setWebViewClient(new SafeWebClient(false, true));
+                  // Fresh request with unique timestamp every time
+                  imgWv.loadUrl(VIDEO_AD_URL + (VIDEO_AD_URL.contains("?") ? "&" : "?") + "tab=" + System.currentTimeMillis());
+                  layout.addView(imgWv, new FrameLayout.LayoutParams(-1, -1));
+
+                  // Clear Red Close Button on Top Right Corner
+                  Button closeBtn = new Button(this);
+                  closeBtn.setText("✖ CLOSE");
+                  closeBtn.setTextColor(Color.WHITE);
+                  closeBtn.setTextSize(14);
+                  closeBtn.setBackgroundColor(Color.parseColor("#EF4444"));
+                  closeBtn.setPadding(32, 14, 32, 14);
+
+                  FrameLayout.LayoutParams btnLp = new FrameLayout.LayoutParams(-2, -2);
+                  btnLp.gravity = Gravity.TOP | Gravity.END;
+                  int margin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics());
+                  btnLp.setMargins(0, margin, margin, 0);
+                  layout.addView(closeBtn, btnLp);
+
+                  interstitialDialog.setContentView(layout);
+                  interstitialDialog.show();
+
+                  closeBtn.setOnClickListener(v -> {
+                      if (interstitialDialog != null && interstitialDialog.isShowing()) {
+                          try {
+                              imgWv.loadUrl("about:blank");
+                              imgWv.destroy();
+                          } catch (Exception ignored) {}
+                          interstitialDialog.dismiss();
+                      }
+                  });
               }
 
               @SuppressLint("ClickableViewAccessibility")
@@ -622,6 +643,7 @@ jobs:
               protected void onDestroy() {
                   handler.removeCallbacksAndMessages(null);
                   if (adDialog != null && adDialog.isShowing()) adDialog.dismiss();
+                  if (interstitialDialog != null && interstitialDialog.isShowing()) interstitialDialog.dismiss();
                   if (preloadedVideoWebView != null) preloadedVideoWebView.destroy();
                   if (bannerWebView != null) bannerWebView.destroy();
                   if (mainWebView != null) mainWebView.destroy();
@@ -631,6 +653,10 @@ jobs:
               @Override
               public void onBackPressed() {
                   if (adDialog != null && adDialog.isShowing()) return;
+                  if (interstitialDialog != null && interstitialDialog.isShowing()) {
+                      interstitialDialog.dismiss();
+                      return;
+                  }
                   if (mainWebView != null && mainWebView.canGoBack()) mainWebView.goBack();
                   else super.onBackPressed();
               }
