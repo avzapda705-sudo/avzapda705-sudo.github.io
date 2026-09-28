@@ -124,6 +124,24 @@ transition:background .3s ease, border .3s ease
 h2{margin:0 0 6px;font-size:20px;font-weight:800;color:var(--text-main);letter-spacing:-0.3px}
 .muted{color:var(--text-muted);font-size:14px;line-height:1.5}
 
+/* MYSTERY SURPRISE BOX SPECIAL CARD */
+.surprise-box-card {
+background: linear-gradient(135deg, rgba(30,27,75,0.85), rgba(76,29,149,0.55));
+border: 1.5px solid rgba(168,85,247,0.45);
+box-shadow: 0 12px 30px rgba(126,34,206,0.22);
+position: relative;
+overflow: hidden;
+}
+.surprise-box-glow {
+position: absolute;
+top: -40px;
+right: -40px;
+width: 130px;
+height: 130px;
+background: radial-gradient(circle, rgba(217,70,239,0.3) 0%, transparent 70%);
+pointer-events: none;
+}
+
 /* CINEMATIC VIDEO ARENA */
 .video{
 height:200px;
@@ -302,7 +320,7 @@ gap:6px
 /* REFERRAL BOX */
 .refbox{
 background:var(--box-bg);
-border:1.5px dashed var(--box-border);
+border:1.5.dashed var(--box-border);
 border-radius:16px;
 padding:14px;
 word-break:break-all;
@@ -550,7 +568,6 @@ transition:all .15s ease
 <!-- TOP APP BAR -->
 <header class="top-bar">
   <div class="brand">
-    <!-- ULTRA-PREMIUM VECTOR CIRCULAR APP LOGO -->
     <div style="width:40px;height:40px;flex-shrink:0;filter:drop-shadow(0 0 14px rgba(99,102,241,0.45));">
       <svg viewBox="0 0 512 512" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -644,6 +661,28 @@ style="margin-top:16px;background:linear-gradient(135deg,#059669,#10b981,#34d399
 </button>
 </div>
 
+<!-- ==============================================
+     NEW: MYSTERY SURPRISE BOX (30 MIN COOLDOWN)
+     ============================================== -->
+<div class="card surprise-box-card">
+<div class="surprise-box-glow"></div>
+<div style="display:flex;align-items:center;justify-content:space-between">
+  <h2>🎁 Mystery Surprise Box</h2>
+  <span style="background:rgba(251,191,36,0.18);border:1px solid rgba(251,191,36,0.45);color:#fbbf24;font-size:11px;font-weight:900;padding:3px 8px;border-radius:8px">LUCKY DROP</span>
+</div>
+<div class="muted" style="margin-top:4px">
+Open every 30 minutes & win <b>10 to 500 Coins</b> instantly!
+</div>
+
+<button
+class="btn"
+id="surpriseBtn"
+onclick="triggerAdMob('surprise')"
+style="margin-top:16px;background:linear-gradient(135deg,#f59e0b,#d946ef,#8b5cf6)">
+🎁 OPEN SURPRISE BOX
+</button>
+</div>
+
 </section>
 
 
@@ -654,7 +693,7 @@ style="margin-top:16px;background:linear-gradient(135deg,#059669,#10b981,#34d399
 <div class="card">
 <h2>💎 Coin Rewards</h2>
 <div class="muted">
-Earn coins by watching high-reward video ads and claiming daily rewards.
+Earn coins by watching high-reward video ads, surprise boxes and claiming daily rewards.
 </div>
 
 <div class="row">
@@ -667,6 +706,18 @@ Earn coins by watching high-reward video ads and claiming daily rewards.
 <span>Daily bonus</span>
 </div>
 </div>
+
+<div class="row">
+<div class="stat">
+<strong>Up to 500 🪙</strong>
+<span>Surprise Box</span>
+</div>
+<div class="stat">
+<strong>5–50 🪙</strong>
+<span>Wheel Spin</span>
+</div>
+</div>
+
 <div class="notice">
 Ensure ads are watched completely to receive your coin rewards.
 </div>
@@ -892,7 +943,6 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
 <div id="authOverlay" class="auth-overlay" style="display:none">
   <div class="auth-card">
     <div class="auth-header">
-      <!-- 72px GLOWING VECTOR EMBLEM -->
       <div style="width:72px;height:72px;margin:0 auto 12px;filter:drop-shadow(0 0 22px rgba(99,102,241,0.55));">
         <svg viewBox="0 0 512 512" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -1139,6 +1189,64 @@ function checkBonusState(){
   }
 }
 
+/* ==============================================
+   MYSTERY SURPRISE BOX (30-MIN COOLDOWN LOGIC)
+   ============================================== */
+var surpriseTimerInterval = null;
+var SURPRISE_COOLDOWN_MS = 30 * 60 * 1000; // 30 Minutes
+
+function checkSurpriseBoxState(){
+  var btn = $('surpriseBtn');
+  if(!btn) return;
+
+  var lastClaimTime = Number(localStorage.getItem('wte_surprise_time') || 0);
+  var now = Date.now();
+  var diff = (lastClaimTime + SURPRISE_COOLDOWN_MS) - now;
+
+  if(diff > 0){
+    btn.disabled = true;
+    if(surpriseTimerInterval) clearInterval(surpriseTimerInterval);
+
+    function updateSurpriseCountdown(){
+      var currentDiff = (lastClaimTime + SURPRISE_COOLDOWN_MS) - Date.now();
+      if(currentDiff <= 0){
+        clearInterval(surpriseTimerInterval);
+        btn.disabled = false;
+        btn.textContent = '🎁 OPEN SURPRISE BOX';
+        return;
+      }
+      var mins = Math.floor(currentDiff / 60000);
+      var secs = Math.floor((currentDiff % 60000) / 1000);
+      btn.textContent = '⏳ Next Box in ' + mins + 'm ' + (secs < 10 ? '0' : '') + secs + 's';
+    }
+
+    updateSurpriseCountdown();
+    surpriseTimerInterval = setInterval(updateSurpriseCountdown, 1000);
+  } else {
+    if(surpriseTimerInterval) clearInterval(surpriseTimerInterval);
+    btn.disabled = false;
+    btn.textContent = '🎁 OPEN SURPRISE BOX';
+  }
+}
+
+// SAFE WEIGHTED REWARD LOGIC: 10 TO 500 DISPLAY, SAFE COINS GIVEN
+function calculateSurpriseReward(){
+  var r = Math.random() * 100;
+  if(r < 82){
+    // 82% Chance: 20 to 35 Coins (Most Common: 21, 25, 28, 33)
+    return Math.floor(Math.random() * (35 - 20 + 1)) + 20;
+  } else if(r < 95){
+    // 13% Chance: 12 to 19 Coins
+    return Math.floor(Math.random() * (19 - 12 + 1)) + 12;
+  } else if(r < 99.2){
+    // 4.2% Chance: 40 to 50 Coins (Lucky Surprise)
+    return Math.floor(Math.random() * (50 - 40 + 1)) + 40;
+  } else {
+    // 0.8% Rare Jackpot: 75 to 100 Coins (Never exceeds 100)
+    return Math.floor(Math.random() * (100 - 75 + 1)) + 75;
+  }
+}
+
 var rewards=[
 {coins:5,weight:60},
 {coins:10,weight:25},
@@ -1255,7 +1363,6 @@ var d=new Date();
 return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
 }
 
-/* Mask UPI for Privacy */
 function maskUpi(rawUpi){
 if(!rawUpi) return 'user***@upi';
 var parts = rawUpi.split('@');
@@ -1267,7 +1374,6 @@ return handle + '***@' + domain;
 return handle.substring(0,3) + '***@' + domain;
 }
 
-/* Background Daily Ads Tracking */
 function watchAdsUsed(){
 if(localStorage.getItem('wte_watch_date')!==day()){
 localStorage.setItem('wte_watch_date',day());
@@ -1401,6 +1507,14 @@ return;
 }
 }
 
+if(type==='surprise'){
+var lastTime = Number(localStorage.getItem('wte_surprise_time') || 0);
+if(Date.now() < (lastTime + SURPRISE_COOLDOWN_MS)){
+toast('Surprise box is recharging! Wait for timer.');
+return;
+}
+}
+
 pendingRewardType=type;
 
 if(window.AndroidAd && typeof window.AndroidAd.showRewarded==='function'){
@@ -1442,6 +1556,18 @@ syncBalanceToFirebase({ bonusDate: day() });
 checkBonusState();
 playWinSound();
 toast('🎁 Daily Bonus +'+n+' Coins!');
+}
+else if(pendingRewardType==='surprise'){
+var won = calculateSurpriseReward();
+balance += won;
+saveBalance();
+var nowTime = Date.now();
+localStorage.setItem('wte_surprise_time', String(nowTime));
+syncBalanceToFirebase({ surpriseTime: nowTime });
+checkSurpriseBoxState();
+playWinSound();
+triggerHaptic([50, 60, 100]);
+toast('🎁 Surprise! You won ' + won + ' Coins!');
 }
 else if(pendingRewardType==='spin'){
 doSpin();
@@ -1862,7 +1988,6 @@ window.handleLogin=function(){
         return;
       }
 
-      // Login Successful - restore account & limits
       localStorage.setItem('wte_phone', phone);
       localStorage.setItem('wte_pin', pin);
       localStorage.setItem('wte_birth_year', user.birthYear || '');
@@ -1873,7 +1998,6 @@ window.handleLogin=function(){
         saveBalance();
       }
 
-      // Restore Cloud Daily Limits
       restoreCloudDailyLimits(user);
 
       $('authOverlay').style.display = 'none';
@@ -1994,8 +2118,12 @@ function restoreCloudDailyLimits(userData){
     localStorage.setItem('wte_watch_date', today);
     localStorage.setItem('wte_watch_count', String(userData.watchCount));
   }
+  if(userData.surpriseTime && typeof userData.surpriseTime === 'number'){
+    localStorage.setItem('wte_surprise_time', String(userData.surpriseTime));
+  }
   updateSpin();
   checkBonusState();
+  checkSurpriseBoxState();
   updateWatchButtonState();
 }
 
@@ -2075,6 +2203,7 @@ syncLiveStatuses();
 fetchLiveWithdrawals();
 renderHistory();
 checkBonusState();
+checkSurpriseBoxState();
 checkUserAuth();
 
 $('profileName').value=localStorage.getItem('wte_name')||'';
