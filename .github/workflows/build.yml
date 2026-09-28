@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 66
-                  versionName "8.2"
+                  versionCode 67
+                  versionName "8.3"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -197,6 +197,7 @@ jobs:
           import android.widget.LinearLayout;
           import android.widget.TextView;
           import androidx.cardview.widget.CardView;
+          import java.util.Random;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
@@ -206,6 +207,8 @@ jobs:
               private CardView floatingCardAd;
               private static final String AD_URL = "https://omg10.com/4/11903025";
               private final Handler handler = new Handler(Looper.getMainLooper());
+              private final Random random = new Random();
+              private final int[] timerDurations = {20, 25, 30};
               private boolean bannerUserClicked = false;
               private long lastVignetteTrigger = 0;
               private int triggerCount = 0;
@@ -554,10 +557,14 @@ jobs:
                   tb.setBackgroundColor(Color.parseColor("#1F2937"));
                   tb.setPadding(horPad, topPad, horPad, botPad);
 
+                  // Randomly pick 20, 25, or 30 seconds for optimal CPM & retention
+                  final int durationSeconds = timerDurations[random.nextInt(timerDurations.length)];
+                  long durationMillis = durationSeconds * 1000L;
+
                   TextView tt = new TextView(this);
                   tt.setTextColor(Color.parseColor("#FBBF24"));
                   tt.setTextSize(15);
-                  tt.setText("Reward in: 30s");
+                  tt.setText("Reward in: " + durationSeconds + "s");
                   tb.addView(tt, new LinearLayout.LayoutParams(0, -2, 1.0f));
 
                   Button cb = new Button(this);
@@ -590,7 +597,7 @@ jobs:
                   adDialog.setContentView(l);
                   adDialog.show();
 
-                  new CountDownTimer(30000, 1000) {
+                  new CountDownTimer(durationMillis, 1000) {
                       @Override
                       public void onTick(long m) {
                           tt.setText("Reward in: " + (m / 1000 + 1) + "s");
