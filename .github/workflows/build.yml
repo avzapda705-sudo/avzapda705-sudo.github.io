@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 62
-                  versionName "7.8"
+                  versionCode 64
+                  versionName "8.0"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -186,6 +186,7 @@ jobs:
           import android.view.View;
           import android.view.ViewGroup;
           import android.view.Window;
+          import android.webkit.CookieManager;
           import android.webkit.JavascriptInterface;
           import android.webkit.SslErrorHandler;
           import android.webkit.WebChromeClient;
@@ -208,6 +209,7 @@ jobs:
               private final Handler handler = new Handler(Looper.getMainLooper());
               private boolean bannerUserClicked = false;
               private long lastVignetteTrigger = 0;
+              private int triggerCount = 0;
 
               @SuppressLint("ClickableViewAccessibility")
               @Override
@@ -321,7 +323,7 @@ jobs:
                   }, 8000);
               }
 
-              // Non-blocking Clean Vignette Trigger: ZERO screen freeze, ZERO blank overlays
+              // Fast Hook for Earn, Withdraw, and Referral
               private void hookShowPage(WebView view) {
                   view.evaluateJavascript(
                       "(function(){" +
@@ -506,19 +508,25 @@ jobs:
                   public void triggerCleanVignette() {
                       runOnUiThread(() -> {
                           long now = System.currentTimeMillis();
-                          if (now - lastVignetteTrigger >= 10000 && mainWebView != null) {
+                          if (now - lastVignetteTrigger >= 2500 && mainWebView != null) {
                               lastVignetteTrigger = now;
-                              String zone = (now % 2 == 0) ? "11914761" : "11914715";
-                              // Directly fire vignette script inside page without creating any blocking dialog
+                              triggerCount++;
+
+                              // Rotate between zones to bypass per-zone frequency limits
+                              final String zone = (triggerCount % 2 == 0) ? "11914715" : "11914761";
+                              final long sessionBuster = now;
+
+                              // Clear storage caps & inject dynamic fresh tag
                               mainWebView.evaluateJavascript(
                                   "(function(){" +
                                   "  try {" +
                                   "    var old = document.getElementById('mv_tag');" +
                                   "    if (old) old.remove();" +
+                                  "    sessionStorage.removeItem('__monetag_vg');" +
                                   "    var s = document.createElement('script');" +
                                   "    s.id = 'mv_tag';" +
                                   "    s.dataset.zone = '" + zone + "';" +
-                                  "    s.src = 'https://n6wxm.com/vignette.min.js?cb=' + Date.now();" +
+                                  "    s.src = 'https://n6wxm.com/vignette.min.js?cb=' + " + sessionBuster + " + '&req=' + " + triggerCount + ";" +
                                   "    document.head.appendChild(s);" +
                                   "  } catch(e) {}" +
                                   "})();",
