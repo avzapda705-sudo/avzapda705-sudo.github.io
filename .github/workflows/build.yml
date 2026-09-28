@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 65
-                  versionName "8.1"
+                  versionCode 66
+                  versionName "8.2"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -544,11 +544,15 @@ jobs:
                   l.setOrientation(LinearLayout.VERTICAL);
                   l.setBackgroundColor(Color.parseColor("#0b0f19"));
 
-                  // Top Status Bar with Countdown
+                  // Top Status Bar with Countdown (Lowered to clear status bar notch)
+                  int topPad = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 42, getResources().getDisplayMetrics());
+                  int horPad = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 20, getResources().getDisplayMetrics());
+                  int botPad = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics());
+
                   LinearLayout tb = new LinearLayout(this);
                   tb.setGravity(Gravity.CENTER_VERTICAL);
                   tb.setBackgroundColor(Color.parseColor("#1F2937"));
-                  tb.setPadding(20, 16, 20, 16);
+                  tb.setPadding(horPad, topPad, horPad, botPad);
 
                   TextView tt = new TextView(this);
                   tt.setTextColor(Color.parseColor("#FBBF24"));
