@@ -103,6 +103,8 @@ jobs:
               repositories {
                   google()
                   mavenCentral()
+                  maven { url "https://dl.bintray.com/inmobi/inmobi-sdk" }
+                  maven { url "https://repository.inmobi.com/android/" }
               }
           }
           rootProject.name = "WatchToEarn"
