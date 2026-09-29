@@ -1962,14 +1962,15 @@ var shareText = '🎬 *Watch to Earn App*\n\n'
               + '🎁 *My Referral Code:* `' + code + '`\n\n'
               + '👉 App open kari Sign Up karti vakhate aa code nakho ane instant *100 Coins* bonus melvo!';
 
-if (navigator.share) {
+if (window.AndroidShare && typeof window.AndroidShare.shareText === 'function') {
+  window.AndroidShare.shareText(shareText);
+} else if (navigator.share) {
   navigator.share({
     title: 'Watch to Earn App',
     text: shareText
   }).catch(function(){});
 } else {
-  var url='https://api.whatsapp.com/send?text='+encodeURIComponent(shareText);
-  window.location.href=url;
+  window.location.href = 'intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=' + encodeURIComponent(shareText) + ';end';
 }
 };
 
