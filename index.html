@@ -858,13 +858,24 @@ REQUEST WITHDRAWAL
      ========================= -->
 <section id="referral" class="page">
 <div class="card">
-<h2>👥 Referral</h2>
+<h2>👥 Refer & Earn</h2>
 <div class="muted">
-Share your invite code and invite friends to earn together.
+Share your link. You and your friend both get <b>100 Coins instant reward!</b>
 </div>
 
-<p style="margin:16px 0 6px;font-size:15px">
-<b>Your code:</b>
+<div class="row" style="margin:16px 0 12px">
+<div class="stat">
+<strong id="refCountDisplay">0</strong>
+<span>Friends Joined</span>
+</div>
+<div class="stat">
+<strong id="refCoinsEarnedDisplay">0 🪙</strong>
+<span>Referral Earnings</span>
+</div>
+</div>
+
+<p style="margin:14px 0 6px;font-size:15px">
+<b>Your Code:</b>
 <span id="refCode" style="color:#a855f7;font-weight:900;letter-spacing:1px;font-size:17px"></span>
 </p>
 
@@ -883,6 +894,15 @@ onclick="shareReferral()"
 style="margin-top:10px;background:linear-gradient(135deg,#059669,#10b981)">
 📲 SHARE VIA WHATSAPP
 </button>
+
+<!-- PRIVATE REFERRAL HISTORY FOR LOGGED IN USER -->
+<div style="margin-top:24px">
+<h3 style="margin:0 0 10px;font-size:17px;font-weight:800;color:var(--text-main)">Your Referral History</h3>
+<div id="myReferralList" style="font-size:13.5px;color:var(--text-muted)">
+Loading your invited friends...
+</div>
+</div>
+
 </div>
 </section>
 
@@ -920,13 +940,16 @@ style="background:rgba(239,68,68,0.15);border:1.5px solid rgba(239,68,68,0.3);co
 <div class="support-card">
 <h3 style="margin-top:0;font-size:18px;color:#a855f7">ℹ️ App Info & Support</h3>
 <div class="faq-item">
+<b>• Referral Bonus:</b> You & your friend get 100 Coins instantly on successful sign up.
+</div>
+<div class="faq-item">
 <b>• Conversion Rate:</b> 200 Coins = ₹1. Special Bonus: 1,000 Coins = ₹10.
 </div>
 <div class="faq-item">
 <b>• Payout Speed:</b> Payments are processed directly to your registered UPI ID daily.
 </div>
 <div class="faq-item">
-<b>• Fair Usage:</b> Complete tasks genuinely without auto-clickers to ensure smooth payouts.
+<b>• Fair Usage:</b> One account per phone number. Anti-cheat protection active.
 </div>
 
 <button
@@ -1043,9 +1066,13 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
     </div>
 
     <input class="input" id="authSignupBirthYear" type="number" placeholder="Birth Year (e.g., 2002 - Recovery Key)">
+    
+    <!-- OPTIONAL REFERRAL INPUT (AUTO FILLED IF OPENED VIA LINK) -->
+    <input class="input" id="authSignupRefCode" type="text" placeholder="Referral Code (Optional - +100 Coins)" style="text-transform:uppercase">
+    
     <div class="auth-error-msg" id="authSignupError"></div>
 
-    <button class="btn" id="btnSubmitSignup" onclick="handleSignup()">CREATE ACCOUNT</button>
+    <button class="btn" id="btnSubmitSignup" onclick="handleSignup()">CREATE ACCOUNT (+100 COINS)</button>
   </div>
 
   <!-- FORGOT PIN FORM -->
@@ -1097,6 +1124,7 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
 var FIREBASE_BASE_URL = "https://watchtoearn-4862d-default-rtdb.firebaseio.com";
 var FIREBASE_DB_URL = FIREBASE_BASE_URL + "/withdrawals";
 var FIREBASE_USERS_URL = FIREBASE_BASE_URL + "/users";
+var FIREBASE_REFS_URL = FIREBASE_BASE_URL + "/referral_codes"; // Maps WT123456 -> phone
 var SUPPORT_EMAIL = "help.watchtoearn@gmail.com";
 
 /* ==============================================
@@ -1225,7 +1253,7 @@ if(localStorage.getItem('wte_bonus_date') === day()){
    MYSTERY SURPRISE BOX (30-MIN COOLDOWN LOGIC)
    ============================================== */
 var surpriseTimerInterval = null;
-var SURPRISE_COOLDOWN_MS = 30 * 60 * 1000; // 30 Minutes
+var SURPRISE_COOLDOWN_MS = 30 * 60 * 1000;
 
 function checkSurpriseBoxState(){
 var btn = $('surpriseBtn');
@@ -1261,7 +1289,6 @@ if(diff > 0){
 }
 }
 
-// SAFE WEIGHTED REWARD LOGIC: 10 TO 500 DISPLAY, SAFE COINS GIVEN
 function calculateSurpriseReward(){
 var r = Math.random() * 100;
 if(r < 82){
@@ -1336,7 +1363,7 @@ toast(msg);
 }
 
 /* ========================================================
-   PERSISTENT FIREBASE SYNC (COINS + PERSISTENT DAILY LIMITS)
+   PERSISTENT FIREBASE SYNC (COINS + LIMITS)
    ======================================================== */
 function syncBalanceToFirebase(additionalData){
 var phone = localStorage.getItem('wte_phone');
@@ -1379,7 +1406,6 @@ if(p){
 p.classList.add('active');
 }
 
-// Highlight active navigation tab
 document.querySelectorAll('.nav button').forEach(function(btn){
 btn.classList.remove('nav-active');
 var onclickStr = btn.getAttribute('onclick') || '';
@@ -1392,6 +1418,10 @@ if(id==='withdraw'){
 syncLiveStatuses();
 renderHistory();
 saveBalance();
+}
+
+if(id==='referral'){
+loadMyReferralData();
 }
 };
 
@@ -1409,6 +1439,13 @@ if(handle.length <= 3){
 return handle + '***@' + domain;
 }
 return handle.substring(0,3) + '***@' + domain;
+}
+
+function maskPhone(p){
+if(!p) return '987*****00';
+var s = String(p).trim();
+if(s.length < 10) return s;
+return s.substring(0, 3) + '*****' + s.substring(8);
 }
 
 function watchAdsUsed(){
@@ -1845,9 +1882,15 @@ return '<div class="history">'
 }).join('');
 }
 
-/* =========================
-   REFERRAL
-   ========================= */
+/* ========================================================
+   ROBUST 100+100 MUTUAL REFERRAL SYSTEM & PRIVATE HISTORY
+   ======================================================== */
+
+// Read URL parameters like ?ref=WT123456
+function getUrlParameter(name){
+var urlParams = new URLSearchParams(window.location.search);
+return urlParams.get(name);
+}
 
 function referralCode(){
 var c=localStorage.getItem('wte_ref');
@@ -1863,7 +1906,18 @@ return location.href.split('?')[0]+'?ref='+encodeURIComponent(referralCode());
 }
 
 function updateRef(){
-$('refCode').textContent=referralCode();$('refLink').textContent=referralUrl();
+var code = referralCode();
+if($('refCode'))$('refCode').textContent=code;
+if($('refLink'))$('refLink').textContent=referralUrl();
+
+var currentPhone = localStorage.getItem('wte_phone');
+if(currentPhone){
+  fetch(FIREBASE_REFS_URL + "/" + code + ".json", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(currentPhone)
+  }).catch(function(e){});
+}
 }
 
 window.copyReferral=function(){
@@ -1897,10 +1951,73 @@ document.body.removeChild(ta);
 }
 
 window.shareReferral=function(){
-var text='🎬 Watch to Earn App\nJoin using my referral link:\n'+referralUrl();
+var text='🎬 Watch to Earn App\nJoin using my referral link & get 100 Coins instant bonus:\n'+referralUrl();
 var url='https://api.whatsapp.com/send?text='+encodeURIComponent(text);
 window.location.href=url;
 };
+
+// LOAD AND RENDER PRIVATE REFERRAL DATA FOR CURRENT LOGGED IN USER
+function loadMyReferralData(){
+var phone = localStorage.getItem('wte_phone');
+var listEl = $('myReferralList');
+if(!phone){
+  if(listEl) listEl.innerHTML = '<div class="muted">Please login to view your referrals.</div>';
+  return;
+}
+
+fetch(FIREBASE_USERS_URL + "/" + phone + "/referrals.json")
+  .then(function(res){ return res.json(); })
+  .then(function(data){
+    if(!listEl) return;
+    if(!data || typeof data !== 'object'){
+      $('refCountDisplay').textContent = '0';$('refCoinsEarnedDisplay').textContent = '0 🪙';
+      listEl.innerHTML = '<div class="muted">You haven’t invited any friends yet. Share your link above!</div>';
+      return;
+    }
+
+    var keys = Object.keys(data);
+    var totalCount = keys.length;
+    var totalEarned = totalCount * 100;
+
+    $('refCountDisplay').textContent = totalCount;
+    $('refCoinsEarnedDisplay').textContent = totalEarned + ' 🪙';
+
+    keys.sort().reverse();
+    var html = '';
+    keys.forEach(function(k){
+      var r = data[k];
+      var mPhone = maskPhone(r.joinedPhone || k);
+      var rDate = r.date || 'Recently';
+      html += '<div class="history" style="display:flex;justify-content:space-between;align-items:center">'
+            + '<div>'
+            + '<b>🟢 ' + mPhone + '</b><br>'
+            + '<span style="font-size:12px;color:var(--text-muted)">Joined: ' + rDate + '</span>'
+            + '</div>'
+            + '<div style="font-weight:900;color:#10b981;font-size:14.5px">+100 🪙</div>'
+            + '</div>';
+    });
+
+    listEl.innerHTML = html;
+  })
+  .catch(function(){
+    if(listEl) listEl.innerHTML = '<div class="muted">Could not load referrals right now.</div>';
+  });
+}
+
+// CHECK INCOMING REFERRAL FROM URL
+function checkIncomingReferral(){
+var incomingRef = getUrlParameter('ref');
+if(incomingRef){
+  incomingRef = incomingRef.trim().toUpperCase();
+  localStorage.setItem('wte_referred_by_code', incomingRef);
+  if($('authSignupRefCode')){$('authSignupRefCode').value = incomingRef;
+  }
+} else {
+  var savedRef = localStorage.getItem('wte_referred_by_code');
+  if(savedRef && $('authSignupRefCode')){$('authSignupRefCode').value = savedRef;
+  }
+}
+}
 
 /* ==============================================
    AUTHENTICATION DASHBOARD (FIREBASE REALTIME)
@@ -1924,6 +2041,7 @@ clearAuthErrors();
 var phone = $('authSignupPhone').value.trim();
 var pin = $('authSignupPin').value.trim();
 var birthYear = $('authSignupBirthYear').value.trim();
+var refCodeInput = $('authSignupRefCode') ?$('authSignupRefCode').value.trim().toUpperCase() : '';
 
 if(phone.length !== 10 || isNaN(phone)){
   showAuthError('authSignupError', 'authSignupPhone', 'Enter a valid 10-digit phone number');
@@ -1947,47 +2065,110 @@ fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
   .then(function(existing){
     if(existing){
       btn.disabled = false;
-      btn.textContent = 'CREATE ACCOUNT';
+      btn.textContent = 'CREATE ACCOUNT (+100 COINS)';
       switchAuthTab('login');
       $('authLoginPhone').value = phone;
       showAuthError('authLoginError', 'authLoginPhone', 'Account already exists! Please enter your PIN.');
       return;
     }
 
+    // NEW USER INSTANT REWARD: 100 COINS WELCOME BONUS
+    var startingCoins = 100;
+    var myNewRefCode = referralCode();
+
     var newUser = {
       phone: phone,
       pin: pin,
       birthYear: birthYear,
-      coins: balance,
+      coins: startingCoins,
+      refCode: myNewRefCode,
       name: localStorage.getItem('wte_name') || 'User',
       createdAt: new Date().toISOString()
     };
 
+    if(refCodeInput){
+      newUser.usedRefCode = refCodeInput;
+    }
+
+    // 1. Save new user account
     fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newUser)
     }).then(function(){
+      // 2. Map referral code to this phone number
+      fetch(FIREBASE_REFS_URL + "/" + myNewRefCode + ".json", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(phone)
+      }).catch(function(){});
+
+      // 3. Process Referrer Instant Reward (+100 Coins) if valid
+      if(refCodeInput){
+        creditReferrerBonus(refCodeInput, phone);
+      }
+
       localStorage.setItem('wte_phone', phone);
       localStorage.setItem('wte_pin', pin);
       localStorage.setItem('wte_birth_year', birthYear);
+      balance = startingCoins;
+      saveBalance();
+
       $('authOverlay').style.display = 'none';
       btn.disabled = false;
-      btn.textContent = 'CREATE ACCOUNT';
+      btn.textContent = 'CREATE ACCOUNT (+100 COINS)';
       updateProfileDisplay();
-      toast('🎉 Account created successfully!');
+      playWinSound();
+      toast('🎉 Welcome! 100 Coins credited to your account!');
+      loadMyReferralData();
     }).catch(function(){
       btn.disabled = false;
-      btn.textContent = 'CREATE ACCOUNT';
+      btn.textContent = 'CREATE ACCOUNT (+100 COINS)';
       showAuthError('authSignupError', 'authSignupPhone', 'Network error. Try again.');
     });
   })
   .catch(function(){
     btn.disabled = false;
-    btn.textContent = 'CREATE ACCOUNT';
+    btn.textContent = 'CREATE ACCOUNT (+100 COINS)';
     showAuthError('authSignupError', 'authSignupPhone', 'Connection failed. Check network.');
   });
 };
+
+// INSTANT FIREBASE REWARD CREDIT FOR USER A (REFERRER)
+function creditReferrerBonus(code, newJoinedPhone){
+fetch(FIREBASE_REFS_URL + "/" + code + ".json")
+  .then(function(res){ return res.json(); })
+  .then(function(referrerPhone){
+    if(!referrerPhone || referrerPhone === newJoinedPhone) return;
+
+    fetch(FIREBASE_USERS_URL + "/" + referrerPhone + ".json")
+      .then(function(res){ return res.json(); })
+      .then(function(refUser){
+        if(!refUser) return;
+        var newCoins = (refUser.coins || 0) + 100;
+        
+        // Update Referrer Coins
+        fetch(FIREBASE_USERS_URL + "/" + referrerPhone + "/coins.json", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newCoins)
+        }).catch(function(){});
+
+        // Add to Referrer's Private Referral History
+        var referralEntry = {
+          joinedPhone: newJoinedPhone,
+          date: new Date().toLocaleDateString(),
+          bonus: 100
+        };
+
+        fetch(FIREBASE_USERS_URL + "/" + referrerPhone + "/referrals/" + newJoinedPhone + ".json", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(referralEntry)
+        }).catch(function(){});
+      }).catch(function(){});
+  }).catch(function(){});
+}
 
 window.handleLogin=function(){
 clearAuthErrors();
@@ -2030,6 +2211,10 @@ fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
     localStorage.setItem('wte_birth_year', user.birthYear || '');
     if(user.name) localStorage.setItem('wte_name', user.name);
 
+    if(user.refCode){
+      localStorage.setItem('wte_ref', user.refCode);
+    }
+
     if(typeof user.coins === 'number'){
       balance = user.coins;
       saveBalance();
@@ -2039,6 +2224,8 @@ fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
 
     $('authOverlay').style.display = 'none';
     updateProfileDisplay();
+    updateRef();
+    loadMyReferralData();
     toast('✅ Welcome back!');
   })
   .catch(function(){
@@ -2168,7 +2355,14 @@ function checkUserAuth(){
 var activePhone = localStorage.getItem('wte_phone');
 if(!activePhone){
   $('authOverlay').style.display = 'flex';
-  switchAuthTab('login');
+  
+  // If user arrived via referral link, jump directly to SIGNUP tab
+  var refParam = getUrlParameter('ref');
+  if(refParam){
+    switchAuthTab('signup');
+  } else {
+    switchAuthTab('login');
+  }
 } else {
   $('authOverlay').style.display = 'none';
   fetch(FIREBASE_USERS_URL + "/" + activePhone + ".json")
@@ -2181,7 +2375,12 @@ if(!activePhone){
           $('balance').textContent = balance;
           if($('withdrawBalance'))$('withdrawBalance').textContent = balance;
         }
+        if(user.refCode){
+          localStorage.setItem('wte_ref', user.refCode);
+          updateRef();
+        }
         restoreCloudDailyLimits(user);
+        loadMyReferralData();
       }
     }).catch(function(){});
 }
@@ -2231,6 +2430,7 @@ window.location.href = "mailto:" + SUPPORT_EMAIL + "?subject=" + subject + "&bod
    ========================= */
 
 function init(){
+checkIncomingReferral();
 saveBalance();
 drawWheel();
 updateSpin();
