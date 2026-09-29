@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<meta name="monetag" content="bfc88b20fcff440ad7941bf0e28c08d0">
 <title>Watch to Earn</title>
 
 <style>
@@ -693,6 +692,21 @@ onclick="triggerAdMob('bonus')"
 style="margin-top:16px;background:linear-gradient(135deg,#059669,#10b981,#34d399)">
 🎁 CLAIM DAILY BONUS
 </button>
+</div>
+
+<!-- INMOBI NATIVE AD CONTAINER -->
+<div class="card" id="nativeAdCard" style="display:none;padding:16px;">
+  <div style="font-size:11px;color:#a855f7;font-weight:800;letter-spacing:0.5px;margin-bottom:8px">SPONSORED</div>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <img id="nativeAdIcon" src="" style="width:48px;height:48px;border-radius:12px;object-fit:cover;display:none" alt="Ad Icon">
+    <div style="flex:1;">
+      <h3 id="nativeAdTitle" style="margin:0;font-size:15px;color:var(--text-main);font-weight:700"></h3>
+      <div id="nativeAdDesc" class="muted" style="font-size:12px;margin-top:2px;"></div>
+    </div>
+  </div>
+  <button id="nativeAdCta" class="btn" style="margin-top:12px;padding:10px;font-size:13px;background:linear-gradient(135deg,#3b82f6,#2563eb)">
+    LEARN MORE
+  </button>
 </div>
 
 <!-- NEW: MYSTERY SURPRISE BOX (30 MIN COOLDOWN) -->
@@ -1683,6 +1697,33 @@ doSpin();
 pendingRewardType=null;
 };
 
+/* =====================================
+   INMOBI NATIVE AD RENDERER
+   ==================================== */
+window.renderNativeAd = function(title, desc, iconUrl, clickUrl) {
+  var card = document.getElementById('nativeAdCard');
+  if (!card) return;
+  
+  if (title) document.getElementById('nativeAdTitle').textContent = title;
+  if (desc) document.getElementById('nativeAdDesc').textContent = desc;
+  
+  var icon = document.getElementById('nativeAdIcon');
+  if (iconUrl) {
+    icon.src = iconUrl;
+    icon.style.display = 'block';
+  }
+  
+  var cta = document.getElementById('nativeAdCta');
+  cta.onclick = function() {
+    if (window.AndroidAd && window.AndroidAd.openExternalUrl) {
+      window.AndroidAd.openExternalUrl(clickUrl);
+    } else {
+      window.open(clickUrl, '_blank');
+    }
+  };
+  card.style.display = 'block';
+};
+
 /* =========================
    SPIN ACTIONS
    ========================= */
@@ -1919,7 +1960,6 @@ return '<div class="history">'
    ROBUST 100+100 MUTUAL REFERRAL SYSTEM & PRIVATE HISTORY
    ======================================================== */
 
-// Read URL parameters like ?ref=WT123456
 function getUrlParameter(name){
 var urlParams = new URLSearchParams(window.location.search);
 return urlParams.get(name);
@@ -2019,7 +2059,6 @@ window.directAppShare=function(target){
   }
 };
 
-// LOAD AND RENDER PRIVATE REFERRAL DATA FOR CURRENT LOGGED IN USER
 function loadMyReferralData(){
 var phone = localStorage.getItem('wte_phone');
 var listEl = $('myReferralList');
@@ -2067,7 +2106,6 @@ fetch(FIREBASE_USERS_URL + "/" + phone + "/referrals.json")
   });
 }
 
-// CHECK INCOMING REFERRAL FROM URL
 function checkIncomingReferral(){
 var incomingRef = getUrlParameter('ref');
 if(incomingRef){
@@ -2135,7 +2173,6 @@ fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
       return;
     }
 
-    // NEW USER INSTANT REWARD: 100 COINS WELCOME BONUS
     var startingCoins = 100;
     var myNewRefCode = referralCode();
 
@@ -2153,20 +2190,17 @@ fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
       newUser.usedRefCode = refCodeInput;
     }
 
-    // 1. Save new user account
     fetch(FIREBASE_USERS_URL + "/" + phone + ".json", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newUser)
     }).then(function(){
-      // 2. Map referral code to this phone number
       fetch(FIREBASE_REFS_URL + "/" + myNewRefCode + ".json", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(phone)
       }).catch(function(){});
 
-      // 3. Process Referrer Instant Reward (+100 Coins) if valid
       if(refCodeInput){
         creditReferrerBonus(refCodeInput, phone);
       }
@@ -2197,7 +2231,6 @@ fetch(FIREBASE_USERS_URL + "/" + phone + ".json")
   });
 };
 
-// INSTANT FIREBASE REWARD CREDIT FOR USER A (REFERRER)
 function creditReferrerBonus(code, newJoinedPhone){
 fetch(FIREBASE_REFS_URL + "/" + code + ".json")
   .then(function(res){ return res.json(); })
@@ -2210,14 +2243,12 @@ fetch(FIREBASE_REFS_URL + "/" + code + ".json")
         if(!refUser) return;
         var newCoins = (refUser.coins || 0) + 100;
         
-        // Update Referrer Coins
         fetch(FIREBASE_USERS_URL + "/" + referrerPhone + "/coins.json", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newCoins)
         }).catch(function(){});
 
-        // Add to Referrer's Private Referral History
         var referralEntry = {
           joinedPhone: newJoinedPhone,
           date: new Date().toLocaleDateString(),
@@ -2390,7 +2421,6 @@ updateProfileDisplay();
 toast('Logged out successfully');
 };
 
-/* Anti-Cheat: Cloud Daily Limits Restore */
 function restoreCloudDailyLimits(userData){
 if(!userData) return;
 var today = day();
@@ -2418,8 +2448,6 @@ function checkUserAuth(){
 var activePhone = localStorage.getItem('wte_phone');
 if(!activePhone){
   $('authOverlay').style.display = 'flex';
-  
-  // If user arrived via referral link, jump directly to SIGNUP tab
   var refParam = getUrlParameter('ref');
   if(refParam){
     switchAuthTab('signup');
@@ -2506,7 +2534,6 @@ checkBonusState();
 checkSurpriseBoxState();
 checkUserAuth();
 
-// Default activate Home
 showPage('home');
 
 $('profileName').value=localStorage.getItem('wte_name')||'';
