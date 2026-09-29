@@ -92,11 +92,18 @@ jobs:
 
           cat > settings.gradle <<'EOF'
           pluginManagement {
-              repositories { google(); mavenCentral(); gradlePluginPortal() }
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
           }
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories { google(); mavenCentral() }
+              repositories {
+                  google()
+                  mavenCentral()
+              }
           }
           rootProject.name = "WatchToEarn"
           include(":app")
@@ -117,8 +124,9 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 72
-                  versionName "8.8"
+                  versionCode 73
+                  versionName "8.9"
+                  multiDexEnabled true
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -134,6 +142,9 @@ jobs:
           dependencies {
               implementation "androidx.annotation:annotation:1.9.1"
               implementation "androidx.cardview:cardview:1.0.0"
+              implementation "com.inmobi.monetization:ads-sdk:10.8.0"
+              implementation "com.google.android.gms:play-services-ads-identifier:18.2.0"
+              implementation "androidx.multidex:multidex:2.0.1"
           }
           EOF
 
@@ -142,6 +153,10 @@ jobs:
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+              <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+              <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+              <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
               <application
                   android:allowBackup="true"
                   android:label="Watch To Earn"
@@ -171,261 +186,192 @@ jobs:
 
           import android.annotation.SuppressLint;
           import android.app.Activity;
-          import android.app.Dialog;
           import android.content.Intent;
           import android.graphics.Color;
           import android.net.Uri;
           import android.net.http.SslError;
           import android.os.Bundle;
-          import android.os.CountDownTimer;
           import android.os.Handler;
           import android.os.Looper;
           import android.util.TypedValue;
           import android.view.Gravity;
-          import android.view.MotionEvent;
-          import android.view.View;
-          import android.view.ViewGroup;
-          import android.view.Window;
           import android.webkit.JavascriptInterface;
           import android.webkit.SslErrorHandler;
           import android.webkit.WebChromeClient;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
-          import android.widget.Button;
           import android.widget.FrameLayout;
-          import android.widget.LinearLayout;
-          import android.widget.TextView;
-          import androidx.cardview.widget.CardView;
-          import java.util.ArrayList;
-          import java.util.Collections;
-          import java.util.List;
+          import android.widget.Toast;
+
+          import com.inmobi.ads.AdMetaInfo;
+          import com.inmobi.ads.InMobiAdRequestStatus;
+          import com.inmobi.ads.InMobiBanner;
+          import com.inmobi.ads.InMobiInterstitial;
+          import com.inmobi.ads.InMobiNative;
+          import com.inmobi.ads.listeners.BannerAdEventListener;
+          import com.inmobi.ads.listeners.InterstitialAdEventListener;
+          import com.inmobi.ads.listeners.NativeAdEventListener;
+          import com.inmobi.sdk.InMobiSdk;
+          import com.inmobi.sdk.SdkInitializationListener;
+
+          import org.json.JSONException;
+          import org.json.JSONObject;
+          import java.util.Map;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
-              private WebView bannerWebView;
-              private WebView preloadedVideoWebView;
-              private Dialog adDialog;
-              private CardView floatingCardAd;
-              private static final String AD_URL = "https://omg10.com/4/11903025";
+              private InMobiBanner inMobiBanner;
+              private InMobiInterstitial rewardedAd;
+              private InMobiInterstitial interstitialAd;
+              private InMobiNative inMobiNative;
+
+              private static final String INMOBI_APP_KEY = "10000235577";
+              private static final long REWARDED_PLACEMENT_ID = 10000826433L;
+              private static final long BANNER_PLACEMENT_ID = 10000826434L;
+              private static final long INTERSTITIAL_PLACEMENT_ID = 10000826437L;
+              private static final long NATIVE_PLACEMENT_ID = 10000826440L;
+
               private final Handler handler = new Handler(Looper.getMainLooper());
-              private final List<Integer> durationPool = new ArrayList<>();
-              private int poolIndex = 0;
-              private boolean bannerUserClicked = false;
-              private long lastVignetteTrigger = 0;
-              private int triggerCount = 0;
+              private FrameLayout rootLayout;
 
-              // Balanced random generator for 20s, 25s, 30s
-              private synchronized int getNextDuration() {
-                  if (durationPool.isEmpty() || poolIndex >= durationPool.size()) {
-                      durationPool.clear();
-                      durationPool.add(20);
-                      durationPool.add(25);
-                      durationPool.add(30);
-                      Collections.shuffle(durationPool);
-                      poolIndex = 0;
-                  }
-                  return durationPool.get(poolIndex++);
-              }
-
-              @SuppressLint("ClickableViewAccessibility")
+              @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-                  FrameLayout root = new FrameLayout(this);
+
+                  rootLayout = new FrameLayout(this);
+                  rootLayout.setBackgroundColor(Color.parseColor("#0b0f19"));
 
                   mainWebView = new WebView(this);
-                  setupWeb(mainWebView, false);
-                  mainWebView.setWebViewClient(new SafeWebClient(false, false) {
-                      @Override
-                      public void onPageFinished(WebView view, String url) {
-                          super.onPageFinished(view, url);
-                          hookShowPage(view);
-                      }
-                  });
+                  setupWeb(mainWebView);
                   mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
                   mainWebView.loadUrl("file:///android_asset/index.html");
 
-                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 64, getResources().getDisplayMetrics());
-                  FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
-                  wp.bottomMargin = bHeight;
-                  root.addView(mainWebView, wp);
+                  int bannerHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 50, getResources().getDisplayMetrics());
+                  FrameLayout.LayoutParams webParams = new FrameLayout.LayoutParams(-1, -1);
+                  webParams.bottomMargin = bannerHeight;
+                  rootLayout.addView(mainWebView, webParams);
 
-                  // Real Monetag Live Banner Strip (Centered at Bottom)
-                  bannerWebView = new WebView(this);
-                  setupWeb(bannerWebView, false);
-                  bannerWebView.getSettings().setLoadWithOverviewMode(true);
-                  bannerWebView.getSettings().setUseWideViewPort(true);
-                  bannerWebView.setHorizontalScrollBarEnabled(false);
-                  bannerWebView.setVerticalScrollBarEnabled(false);
-                  bannerWebView.setBackgroundColor(Color.parseColor("#0b0f19"));
+                  setContentView(rootLayout);
 
-                  bannerWebView.setWebViewClient(new SafeWebClient(true, false) {
+                  initInMobiSdk(bannerHeight);
+              }
+
+              private void initInMobiSdk(int bannerHeight) {
+                  JSONObject consentObject = new JSONObject();
+                  try {
+                      consentObject.put(InMobiSdk.IM_GDPR_CONSENT_AVAILABLE, true);
+                      consentObject.put("gdpr", "0");
+                  } catch (JSONException ignored) {}
+
+                  InMobiSdk.init(this, INMOBI_APP_KEY, consentObject, new SdkInitializationListener() {
                       @Override
-                      public void onPageFinished(WebView view, String url) {
-                          super.onPageFinished(view, url);
-                          view.evaluateJavascript(
-                              "(function(){" +
-                              "try{" +
-                              "document.body.style.margin='0';" +
-                              "document.body.style.padding='0';" +
-                              "document.body.style.width='100%';" +
-                              "document.body.style.height='100%';" +
-                              "document.body.style.display='flex';" +
-                              "document.body.style.justifyContent='center';" +
-                              "document.body.style.alignItems='center';" +
-                              "document.body.style.overflow='hidden';" +
-                              "document.body.style.background='#0b0f19';" +
-                              "}catch(e){}" +
-                              "})();",
-                              null
-                          );
-                      }
-                  });
-                  
-                  bannerWebView.setOnTouchListener((v, event) -> {
-                      if (event.getAction() == MotionEvent.ACTION_UP) {
-                          bannerUserClicked = true;
-                          handler.postDelayed(() -> bannerUserClicked = false, 2000);
-                      }
-                      return false;
-                  });
-
-                  bannerWebView.loadUrl(AD_URL);
-
-                  FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
-                  bp.gravity = Gravity.BOTTOM;
-                  root.addView(bannerWebView, bp);
-
-                  buildCard(root);
-                  setContentView(root);
-
-                  // Preload video ad immediately in background
-                  preloadVideoAd();
-
-                  // 45-Second Banner Auto-Refresh Loop (Stable & smooth)
-                  handler.postDelayed(new Runnable() {
-                      @Override
-                      public void run() {
-                          if (!isFinishing() && bannerWebView != null) {
-                              bannerWebView.reload();
+                      public void onInitializationComplete(Error error) {
+                          if (error == null) {
+                              runOnUiThread(() -> {
+                                  setupBannerAd(bannerHeight);
+                                  preloadRewardedAd();
+                                  preloadInterstitialAd();
+                                  loadNativeAd();
+                              });
                           }
-                          handler.postDelayed(this, 45000);
                       }
-                  }, 45000);
+                  });
+              }
 
-                  // Floating Bonus Card Loop (Only after user logs in)
-                  handler.postDelayed(new Runnable() {
+              private void setupBannerAd(int bannerHeight) {
+                  inMobiBanner = new InMobiBanner(this, BANNER_PLACEMENT_ID);
+                  inMobiBanner.setAnimationType(InMobiBanner.AnimationType.ROTATE_HORIZONTAL_AXIS);
+                  inMobiBanner.setListener(new BannerAdEventListener() {
                       @Override
-                      public void run() {
-                          if (!isFinishing() && floatingCardAd != null && mainWebView != null) {
-                              mainWebView.evaluateJavascript(
-                                  "(function(){ var el = document.getElementById('authOverlay'); return (el && el.style.display !== 'none'); })();",
-                                  isLoginOpen -> {
-                                      if ("false".equals(isLoginOpen)) {
-                                          floatingCardAd.setVisibility(View.VISIBLE);
-                                          floatingCardAd.bringToFront();
-                                          handler.postDelayed(() -> {
-                                              if (floatingCardAd != null) floatingCardAd.setVisibility(View.GONE);
-                                          }, 8000);
-                                      }
-                                  }
-                              );
-                          }
-                          handler.postDelayed(this, 25000);
+                      public void onAdLoadSucceeded(InMobiBanner banner, AdMetaInfo adMetaInfo) {}
+
+                      @Override
+                      public void onAdLoadFailed(InMobiBanner banner, InMobiAdRequestStatus status) {
+                          handler.postDelayed(() -> {
+                              if (inMobiBanner != null) inMobiBanner.load();
+                          }, 30000);
                       }
-                  }, 8000);
-              }
-
-              // Pure hook: only trigger on earn, withdraw, referral
-              private void hookShowPage(WebView view) {
-                  view.evaluateJavascript(
-                      "(function(){" +
-                      "  if (window._pageHooked) return;" +
-                      "  window._pageHooked = true;" +
-                      "  var originalShow = window.showPage;" +
-                      "  window.showPage = function(pageId) {" +
-                      "    if (typeof originalShow === 'function') { originalShow(pageId); }" +
-                      "    var auth = document.getElementById('authOverlay');" +
-                      "    var isLoggedIn = !(auth && auth.style.display !== 'none');" +
-                      "    if (isLoggedIn && ['earn', 'withdraw', 'referral'].includes(pageId)) {" +
-                      "      if (window.AndroidAd) { window.AndroidAd.triggerTabAd(); }" +
-                      "    }" +
-                      "  };" +
-                      "})();",
-                      null
-                  );
-              }
-
-              private void preloadVideoAd() {
-                  if (preloadedVideoWebView != null) {
-                      try {
-                          preloadedVideoWebView.destroy();
-                      } catch (Exception ignored) {}
-                  }
-                  preloadedVideoWebView = new WebView(this);
-                  setupWeb(preloadedVideoWebView, false);
-                  preloadedVideoWebView.setBackgroundColor(Color.parseColor("#0b0f19"));
-                  preloadedVideoWebView.setWebViewClient(new SafeWebClient(false, true));
-                  preloadedVideoWebView.loadUrl(AD_URL + (AD_URL.contains("?") ? "&" : "?") + "pw=" + System.currentTimeMillis());
-              }
-
-              private void buildCard(FrameLayout root) {
-                  floatingCardAd = new CardView(this);
-                  floatingCardAd.setRadius(24);
-                  floatingCardAd.setCardElevation(24);
-                  floatingCardAd.setCardBackgroundColor(Color.WHITE);
-                  floatingCardAd.setVisibility(View.GONE);
-
-                  LinearLayout cl = new LinearLayout(this);
-                  cl.setGravity(Gravity.CENTER_VERTICAL);
-                  cl.setPadding(20, 16, 20, 16);
-
-                  TextView ic = new TextView(this);
-                  ic.setText("🎁");
-                  ic.setTextSize(22);
-                  cl.addView(ic);
-
-                  LinearLayout tl = new LinearLayout(this);
-                  tl.setOrientation(LinearLayout.VERTICAL);
-                  tl.setPadding(16, 0, 8, 0);
-
-                  TextView h = new TextView(this);
-                  h.setText("Special Bonus Available!");
-                  h.setTextColor(Color.BLACK);
-                  h.setTextSize(14);
-
-                  TextView s = new TextView(this);
-                  s.setText("Tap to view offer & earn coins");
-                  s.setTextColor(Color.GRAY);
-                  s.setTextSize(11);
-
-                  tl.addView(h);
-                  tl.addView(s);
-                  cl.addView(tl, new LinearLayout.LayoutParams(0, -2, 1.0f));
-
-                  TextView close = new TextView(this);
-                  close.setText("✖");
-                  close.setTextSize(18);
-                  close.setTextColor(Color.GRAY);
-                  close.setPadding(12, 12, 12, 12);
-                  close.setOnClickListener(v -> floatingCardAd.setVisibility(View.GONE));
-                  cl.addView(close);
-
-                  cl.setOnClickListener(v -> {
-                      floatingCardAd.setVisibility(View.GONE);
-                      showAd(false);
                   });
 
-                  floatingCardAd.addView(cl);
-                  FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(-1, -2);
-                  cp.gravity = Gravity.TOP;
-                  int topMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 110, getResources().getDisplayMetrics());
-                  cp.setMargins(24, topMargin, 24, 0);
-                  root.addView(floatingCardAd, cp);
+                  FrameLayout.LayoutParams bannerParams = new FrameLayout.LayoutParams(-1, bannerHeight);
+                  bannerParams.gravity = Gravity.BOTTOM;
+                  rootLayout.addView(inMobiBanner, bannerParams);
+                  inMobiBanner.load();
               }
 
-              private void setupWeb(WebView wv, boolean disableCache) {
+              private void preloadRewardedAd() {
+                  rewardedAd = new InMobiInterstitial(this, REWARDED_PLACEMENT_ID, new InterstitialAdEventListener() {
+                      @Override
+                      public void onAdLoadFailed(InMobiInterstitial ad, InMobiAdRequestStatus status) {
+                          handler.postDelayed(() -> preloadRewardedAd(), 15000);
+                      }
+
+                      @Override
+                      public void onRewardsUnlocked(InMobiInterstitial ad, Map<Object, Object> rewards) {
+                          grantRewardInWeb();
+                      }
+
+                      @Override
+                      public void onAdDismissed(InMobiInterstitial ad) {
+                          preloadRewardedAd();
+                      }
+                  });
+                  rewardedAd.load();
+              }
+
+              private void preloadInterstitialAd() {
+                  interstitialAd = new InMobiInterstitial(this, INTERSTITIAL_PLACEMENT_ID, new InterstitialAdEventListener() {
+                      @Override
+                      public void onAdLoadFailed(InMobiInterstitial ad, InMobiAdRequestStatus status) {
+                          handler.postDelayed(() -> preloadInterstitialAd(), 20000);
+                      }
+
+                      @Override
+                      public void onAdDismissed(InMobiInterstitial ad) {
+                          preloadInterstitialAd();
+                      }
+                  });
+                  interstitialAd.load();
+              }
+
+              private void loadNativeAd() {
+                  inMobiNative = new InMobiNative(this, NATIVE_PLACEMENT_ID, new NativeAdEventListener() {
+                      @Override
+                      public void onAdLoadSucceeded(InMobiNative ad, AdMetaInfo info) {
+                          runOnUiThread(() -> {
+                              if (mainWebView != null && ad != null) {
+                                  String title = ad.getAdTitle() != null ? ad.getAdTitle().replace("'", "\\'") : "";
+                                  String desc = ad.getAdDescription() != null ? ad.getAdDescription().replace("'", "\\'") : "";
+                                  String iconUrl = ad.getAdIconUrl() != null ? ad.getAdIconUrl() : "";
+                                  String clickUrl = ad.getAdLandingPageUrl() != null ? ad.getAdLandingPageUrl() : "";
+
+                                  mainWebView.evaluateJavascript(
+                                      "if(window.renderNativeAd){window.renderNativeAd('" + title + "', '" + desc + "', '" + iconUrl + "', '" + clickUrl + "');}",
+                                      null
+                                  );
+                              }
+                          });
+                      }
+
+                      @Override
+                      public void onAdLoadFailed(InMobiNative ad, InMobiAdRequestStatus status) {
+                          handler.postDelayed(() -> loadNativeAd(), 30000);
+                      }
+                  });
+                  inMobiNative.load();
+              }
+
+              private void grantRewardInWeb() {
+                  runOnUiThread(() -> {
+                      if (mainWebView != null) {
+                          mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();}", null);
+                      }
+                  });
+              }
+
+              private void setupWeb(WebView wv) {
                   WebSettings s = wv.getSettings();
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
@@ -434,34 +380,14 @@ jobs:
                   s.setAllowContentAccess(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                   s.setMediaPlaybackRequiresUserGesture(false);
-                  if (disableCache) {
-                      s.setCacheMode(WebSettings.LOAD_NO_CACHE);
-                  } else {
-                      s.setCacheMode(WebSettings.LOAD_DEFAULT);
-                  }
                   s.setUserAgentString(s.getUserAgentString() + " MobileApp");
                   wv.setWebChromeClient(new WebChromeClient());
-              }
-
-              private class SafeWebClient extends WebViewClient {
-                  private final boolean isBanner;
-                  private final boolean isRewarded;
-
-                  public SafeWebClient(boolean isBanner, boolean isRewarded) {
-                      this.isBanner = isBanner;
-                      this.isRewarded = isRewarded;
-                  }
-
-                  @Override
-                  public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                      if (url == null) return false;
-
-                      // Banner: open external browser only if manually touched
-                      if (isBanner) {
-                          if (bannerUserClicked && !url.contains("omg10.com") && (url.startsWith("http://") || url.startsWith("https://"))) {
+                  wv.setWebViewClient(new WebViewClient() {
+                      @Override
+                      public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                          if (url != null && (url.startsWith("intent://") || url.startsWith("whatsapp://") || url.startsWith("tg://") || url.startsWith("sms:"))) {
                               try {
-                                  bannerUserClicked = false;
-                                  Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                                  Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                                   startActivity(intent);
                                   return true;
                               } catch (Exception ignored) {}
@@ -469,190 +395,69 @@ jobs:
                           return false;
                       }
 
-                      // Rewarded Video: Complete lockdown inside app dialog
-                      if (isRewarded) {
-                          if (url.startsWith("http://") || url.startsWith("https://")) {
-                              view.loadUrl(url);
-                              return true;
-                          }
-                          return true;
+                      @Override
+                      public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                          handler.proceed();
                       }
-
-                      if (url.startsWith("intent://")) {
-                          try {
-                              Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
-                              if (intent != null) {
-                                  try {
-                                      startActivity(intent);
-                                  } catch (Exception e) {
-                                      String fallback = intent.getStringExtra("browser_fallback_url");
-                                      if (fallback != null) {
-                                          view.loadUrl(fallback);
-                                      }
-                                  }
-                              }
-                          } catch (Exception ignored) {}
-                          return true;
-                      }
-
-                      boolean isExternal = !url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("file://");
-                      boolean isAppRedirect = url.contains("play.google.com/store") || url.contains("youtube.com") || url.contains("youtu.be");
-
-                      if (isExternal || isAppRedirect) {
-                          try {
-                              Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
-                              intent.setAction(Intent.ACTION_VIEW);
-                              startActivity(intent);
-                          } catch (Exception ignored) {}
-                          return true;
-                      }
-
-                      return false;
-                  }
-
-                  @Override
-                  public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-                      handler.proceed();
-                  }
+                  });
               }
 
               public class AdBridge {
                   @JavascriptInterface
-                  public void showRewarded() { runOnUiThread(() -> showAd(true)); }
-                  @JavascriptInterface
-                  public void showInterstitial() { runOnUiThread(() -> showAd(true)); }
-
-                  @JavascriptInterface
-                  public void triggerTabAd() {
+                  public void showRewarded() {
                       runOnUiThread(() -> {
-                          long now = System.currentTimeMillis();
-                          if (now - lastVignetteTrigger >= 3000 && mainWebView != null) {
-                              lastVignetteTrigger = now;
-                              triggerCount++;
-                              final String zone = (triggerCount % 2 == 0) ? "11914715" : "11914761";
-                              mainWebView.evaluateJavascript(
-                                  "(function(){" +
-                                  "  try {" +
-                                  "    var old = document.getElementById('mv_tag');" +
-                                  "    if (old) old.remove();" +
-                                  "    var s = document.createElement('script');" +
-                                  "    s.id = 'mv_tag';" +
-                                  "    s.dataset.zone = '" + zone + "';" +
-                                  "    s.src = 'https://n6wxm.com/vignette.min.js?cb=' + Date.now();" +
-                                  "    document.head.appendChild(s);" +
-                                  "  } catch(e) {}" +
-                                  "})();",
-                                  null
-                              );
+                          if (rewardedAd != null && rewardedAd.isReady()) {
+                              rewardedAd.show();
+                          } else {
+                              Toast.makeText(MainActivity.this, "Loading ad, please try in 3 seconds...", Toast.LENGTH_SHORT).show();
+                              if (rewardedAd != null) rewardedAd.load();
                           }
                       });
                   }
-              }
 
-              @SuppressLint("ClickableViewAccessibility")
-              private void showAd(boolean reward) {
-                  if (isFinishing()) return;
-                  adDialog = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
-                  adDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-                  adDialog.setCancelable(false);
-
-                  LinearLayout l = new LinearLayout(this);
-                  l.setOrientation(LinearLayout.VERTICAL);
-                  l.setBackgroundColor(Color.parseColor("#0b0f19"));
-
-                  // Top Status Bar with Countdown (Lowered to clear status bar notch)
-                  int topPad = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 42, getResources().getDisplayMetrics());
-                  int horPad = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 20, getResources().getDisplayMetrics());
-                  int botPad = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 16, getResources().getDisplayMetrics());
-
-                  LinearLayout tb = new LinearLayout(this);
-                  tb.setGravity(Gravity.CENTER_VERTICAL);
-                  tb.setBackgroundColor(Color.parseColor("#1F2937"));
-                  tb.setPadding(horPad, topPad, horPad, botPad);
-
-                  // Balanced automatic 20s, 25s, 30s selection
-                  final int durationSeconds = getNextDuration();
-                  long durationMillis = durationSeconds * 1000L;
-
-                  TextView tt = new TextView(this);
-                  tt.setTextColor(Color.parseColor("#FBBF24"));
-                  tt.setTextSize(15);
-                  tt.setText("Reward in: " + durationSeconds + "s");
-                  tb.addView(tt, new LinearLayout.LayoutParams(0, -2, 1.0f));
-
-                  Button cb = new Button(this);
-                  cb.setText("✖ Close");
-                  cb.setTextColor(Color.WHITE);
-                  cb.setBackgroundColor(Color.parseColor("#EF4444"));
-                  cb.setVisibility(View.GONE);
-                  tb.addView(cb);
-                  l.addView(tb);
-
-                  // Use the preloaded ad view directly for instant display
-                  final WebView activeAdView;
-                  if (preloadedVideoWebView != null) {
-                      activeAdView = preloadedVideoWebView;
-                      preloadedVideoWebView = null;
-                  } else {
-                      activeAdView = new WebView(this);
-                      setupWeb(activeAdView, false);
-                      activeAdView.setBackgroundColor(Color.parseColor("#0b0f19"));
-                      activeAdView.setWebViewClient(new SafeWebClient(false, true));
-                      activeAdView.loadUrl(AD_URL);
+                  @JavascriptInterface
+                  public void showInterstitial() {
+                      runOnUiThread(() -> {
+                          if (interstitialAd != null && interstitialAd.isReady()) {
+                              interstitialAd.show();
+                          } else if (interstitialAd != null) {
+                              interstitialAd.load();
+                          }
+                      });
                   }
 
-                  if (activeAdView.getParent() != null) {
-                      ((ViewGroup) activeAdView.getParent()).removeView(activeAdView);
+                  @JavascriptInterface
+                  public void triggerTabAd() {
+                      showInterstitial();
                   }
 
-                  l.addView(activeAdView, new LinearLayout.LayoutParams(-1, 0, 1.0f));
-
-                  adDialog.setContentView(l);
-                  adDialog.show();
-
-                  new CountDownTimer(durationMillis, 1000) {
-                      @Override
-                      public void onTick(long m) {
-                          tt.setText("Reward in: " + (m / 1000 + 1) + "s");
-                      }
-
-                      @Override
-                      public void onFinish() {
-                          tt.setText("🎉 Reward Ready!");
-                          cb.setVisibility(View.VISIBLE);
-                      }
-                  }.start();
-
-                  cb.setOnClickListener(v -> {
-                      if (adDialog != null && adDialog.isShowing()) {
+                  @JavascriptInterface
+                  public void openExternalUrl(String url) {
+                      if (url != null && !url.isEmpty()) {
                           try {
-                              activeAdView.loadUrl("about:blank");
-                              activeAdView.destroy();
+                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                              startActivity(intent);
                           } catch (Exception ignored) {}
-                          adDialog.dismiss();
                       }
-                      if (reward && mainWebView != null) {
-                          mainWebView.post(() -> mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();}", null));
-                      }
-                      preloadVideoAd();
-                  });
+                  }
               }
 
               @Override
               protected void onDestroy() {
                   handler.removeCallbacksAndMessages(null);
-                  if (adDialog != null && adDialog.isShowing()) adDialog.dismiss();
-                  if (preloadedVideoWebView != null) preloadedVideoWebView.destroy();
-                  if (bannerWebView != null) bannerWebView.destroy();
+                  if (inMobiBanner != null) inMobiBanner.destroy();
+                  if (inMobiNative != null) inMobiNative.destroy();
                   if (mainWebView != null) mainWebView.destroy();
                   super.onDestroy();
               }
 
               @Override
               public void onBackPressed() {
-                  if (adDialog != null && adDialog.isShowing()) return;
-                  if (mainWebView != null && mainWebView.canGoBack()) mainWebView.goBack();
-                  else super.onBackPressed();
+                  if (mainWebView != null && mainWebView.canGoBack()) {
+                      mainWebView.goBack();
+                  } else {
+                      super.onBackPressed();
+                  }
               }
           }
           EOF
