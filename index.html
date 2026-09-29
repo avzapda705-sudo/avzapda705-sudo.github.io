@@ -216,7 +216,7 @@ letter-spacing:0.4px
 }
 .ticker-marquee{white-space:nowrap;overflow:hidden;flex:1}
 .ticker-content{display:inline-block;white-space:nowrap;animation:tickerScroll 22s linear infinite}
-@keyframes tickerScroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+@keyframes tickerScroll{0%{transform:translateX(100%)}100%{transform:translateX(-100%}}
 
 /* MODERN INPUTS */
 .input{
@@ -885,14 +885,14 @@ Share your link. You and your friend both get <b>100 Coins instant reward!</b>
 class="btn"
 onclick="copyReferral()"
 style="margin-top:16px">
-📋 COPY LINK
+📋 COPY LINK & CODE
 </button>
 
 <button
 class="btn"
 onclick="shareReferral()"
 style="margin-top:10px;background:linear-gradient(135deg,#059669,#10b981)">
-📲 SHARE VIA WHATSAPP
+📤 SHARE WITH FRIENDS
 </button>
 
 <!-- PRIVATE REFERRAL HISTORY FOR LOGGED IN USER -->
@@ -1126,6 +1126,9 @@ var FIREBASE_DB_URL = FIREBASE_BASE_URL + "/withdrawals";
 var FIREBASE_USERS_URL = FIREBASE_BASE_URL + "/users";
 var FIREBASE_REFS_URL = FIREBASE_BASE_URL + "/referral_codes"; // Maps WT123456 -> phone
 var SUPPORT_EMAIL = "help.watchtoearn@gmail.com";
+
+// LIVE APK DOWNLOAD LINK (MEDIAFIRE)
+var LIVE_APK_URL = "https://www.mediafire.com/file/cp9v6mzv96j90m4/WatchToEarn.apk/file";
 
 /* ==============================================
    PRECISION MECHANICAL WHEEL AUDIO & HAPTIC
@@ -1902,7 +1905,7 @@ return c;
 }
 
 function referralUrl(){
-return location.href.split('?')[0]+'?ref='+encodeURIComponent(referralCode());
+return LIVE_APK_URL;
 }
 
 function updateRef(){
@@ -1921,15 +1924,18 @@ if(currentPhone){
 }
 
 window.copyReferral=function(){
-var text=referralUrl();
-if(navigator.clipboard&&window.isSecureContext){
-navigator.clipboard.writeText(text).then(function(){
-  toast('✅ Referral link copied');
+var code = referralCode();
+var link = referralUrl();
+var fullShareText = '🎬 Watch to Earn App\n📥 Download APK: ' + link + '\n🎁 Referral Code: ' + code + '\n(Use code on sign up to get instant 100 Coins!)';
+
+if(navigator.clipboard && window.isSecureContext){
+navigator.clipboard.writeText(fullShareText).then(function(){
+  toast('✅ Download link & Referral Code copied!');
 }).catch(function(){
-  fallbackCopy(text);
+  fallbackCopy(fullShareText);
 });
 }else{
-fallbackCopy(text);
+fallbackCopy(fullShareText);
 }
 };
 
@@ -1943,17 +1949,33 @@ ta.focus();
 ta.select();
 try{
 document.execCommand('copy');
-toast('✅ Referral link copied');
+toast('✅ Download link & Referral Code copied!');
 }catch(e){
 toast('Copy failed — please select link manually');
 }
 document.body.removeChild(ta);
 }
 
+// MULTI-APP SHARE (WHATSAPP, TELEGRAM, INSTA, SMS ETC.)
 window.shareReferral=function(){
-var text='🎬 Watch to Earn App\nJoin using my referral link & get 100 Coins instant bonus:\n'+referralUrl();
-var url='https://api.whatsapp.com/send?text='+encodeURIComponent(text);
-window.location.href=url;
+var code = referralCode();
+var link = referralUrl();
+var shareTitle = 'Watch to Earn App';
+var shareText = '🎬 Watch to Earn App\n\n'
+              + 'Watch videos, spin wheels, open lucky boxes & earn real cash directly to UPI!\n\n'
+              + '📥 Download APK Here:\n' + link + '\n\n'
+              + '🎁 My Referral Code: ' + code + '\n\n'
+              + '👉 App open kari Sign Up karti vakhate aa code nakho ane instant 100 Coins bonus melvo!';
+
+if (navigator.share) {
+  navigator.share({
+    title: shareTitle,
+    text: shareText
+  }).catch(function(err){});
+} else {
+  var url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(shareText);
+  window.location.href = url;
+}
 };
 
 // LOAD AND RENDER PRIVATE REFERRAL DATA FOR CURRENT LOGGED IN USER
