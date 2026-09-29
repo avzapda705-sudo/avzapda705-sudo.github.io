@@ -410,8 +410,12 @@ jobs:
                           if (rewardedAd != null && rewardedAd.isReady()) {
                               rewardedAd.show();
                           } else {
-                              Toast.makeText(MainActivity.this, "Loading ad, please try in 3 seconds...", Toast.LENGTH_SHORT).show();
-                              if (rewardedAd != null) rewardedAd.load();
+                              Toast.makeText(MainActivity.this, "Requesting ad from server...", Toast.LENGTH_SHORT).show();
+                              if (rewardedAd != null) {
+                                  rewardedAd.load();
+                              } else {
+                                  preloadRewardedAd();
+                              }
                           }
                       });
                   }
@@ -421,8 +425,12 @@ jobs:
                       runOnUiThread(() -> {
                           if (interstitialAd != null && interstitialAd.isReady()) {
                               interstitialAd.show();
-                          } else if (interstitialAd != null) {
-                              interstitialAd.load();
+                          } else {
+                              if (interstitialAd != null) {
+                                  interstitialAd.load();
+                              } else {
+                                  preloadInterstitialAd();
+                              }
                           }
                       });
                   }
