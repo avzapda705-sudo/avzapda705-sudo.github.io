@@ -890,7 +890,7 @@ style="margin-top:16px">
 
 <button
 class="btn"
-onclick="shareReferral()"
+onclick="openShareSheet()"
 style="margin-top:10px;background:linear-gradient(135deg,#059669,#10b981)">
 📲 SHARE WITH FRIENDS
 </button>
@@ -991,6 +991,36 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
 </nav>
 
 <div id="toast" class="toast"></div>
+
+<!-- DIRECT POPUP SHARE SHEET (BYPASSES MANUS & SYSTEM INTENT BUGS) -->
+<div id="shareSheetOverlay" class="dialog-overlay" style="display:none" onclick="if(event.target===this)closeShareSheet()">
+  <div class="dialog-card" style="max-width:340px">
+    <h3 style="margin:0 0 6px;font-size:18px;color:var(--text-main)">📤 Share With Friends</h3>
+    <div class="muted" style="font-size:13px;margin-bottom:16px">Choose how you want to invite your friends:</div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn" onclick="directAppShare('whatsapp')" style="background:#25D366;box-shadow:0 6px 16px rgba(37,211,102,0.3);padding:13px">
+        💬 WhatsApp
+      </button>
+
+      <button class="btn" onclick="directAppShare('telegram')" style="background:#0088cc;box-shadow:0 6px 16px rgba(0,136,204,0.3);padding:13px">
+        ✈️ Telegram
+      </button>
+
+      <button class="btn" onclick="directAppShare('sms')" style="background:#f59e0b;box-shadow:0 6px 16px rgba(245,158,11,0.3);padding:13px">
+        ✉️ Messages (SMS)
+      </button>
+
+      <button class="btn-cancel" onclick="copyReferral();closeShareSheet()" style="padding:13px">
+        📋 Copy Link & Code
+      </button>
+
+      <button class="btn-cancel" onclick="closeShareSheet()" style="background:transparent;border:none;color:var(--text-muted);padding:8px;font-size:13px">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ==============================================
      PROFESSIONAL AUTH DASHBOARD MODAL
@@ -1923,16 +1953,26 @@ if(currentPhone){
 }
 }
 
+function buildShareMessage(){
+var code = referralCode();
+var link = referralUrl();
+return '🎬 *Watch to Earn App*\n\n'
+     + 'Watch videos, spin wheels, open lucky boxes & earn real cash directly to UPI!\n\n'
+     + '📥 *Download APK Here:*\n' + link + '\n\n'
+     + '🎁 *My Referral Code:* `' + code + '`\n\n'
+     + '👉 App open kari Sign Up karti vakhate aa code nakho ane instant *100 Coins* bonus melvo!';
+}
+
 window.copyReferral=function(){
-var text=referralUrl();
-if(navigator.clipboard&&window.isSecureContext){
-navigator.clipboard.writeText(text).then(function(){
-  toast('✅ Referral link copied');
-}).catch(function(){
+var text = buildShareMessage();
+if(navigator.clipboard && window.isSecureContext){
+  navigator.clipboard.writeText(text).then(function(){
+    toast('✅ Referral text & Download link copied!');
+  }).catch(function(){
+    fallbackCopy(text);
+  });
+} else {
   fallbackCopy(text);
-});
-}else{
-fallbackCopy(text);
 }
 };
 
@@ -1946,32 +1986,37 @@ ta.focus();
 ta.select();
 try{
 document.execCommand('copy');
-toast('✅ Referral link copied');
+toast('✅ Referral text & Download link copied!');
 }catch(e){
 toast('Copy failed — please select link manually');
 }
 document.body.removeChild(ta);
 }
 
-window.shareReferral=function(){
-var code = referralCode();
-var link = referralUrl();
-var shareText = '🎬 *Watch to Earn App*\n\n'
-              + 'Watch videos, spin wheels, open lucky boxes & earn real cash directly to UPI!\n\n'
-              + '📥 *Download APK Here:*\n' + link + '\n\n'
-              + '🎁 *My Referral Code:* `' + code + '`\n\n'
-              + '👉 App open kari Sign Up karti vakhate aa code nakho ane instant *100 Coins* bonus melvo!';
+/* ========================================================
+   DIRECT SHARE DIALOG (NO MANUS CONFLICT)
+   ======================================================== */
+window.openShareSheet=function(){
+  var el = $('shareSheetOverlay');
+  if(el) el.style.display = 'flex';
+};
 
-if (window.AndroidShare && typeof window.AndroidShare.shareText === 'function') {
-  window.AndroidShare.shareText(shareText);
-} else if (navigator.share) {
-  navigator.share({
-    title: 'Watch to Earn App',
-    text: shareText
-  }).catch(function(){});
-} else {
-  window.location.href = 'intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT=' + encodeURIComponent(shareText) + ';end';
-}
+window.closeShareSheet=function(){
+  var el = $('shareSheetOverlay');
+  if(el) el.style.display = 'none';
+};
+
+window.directAppShare=function(target){
+  closeShareSheet();
+  var text = buildShareMessage();
+
+  if(target === 'whatsapp'){
+    window.location.href = 'whatsapp://send?text=' + encodeURIComponent(text);
+  } else if(target === 'telegram'){
+    window.location.href = 'tg://msg?text=' + encodeURIComponent(text);
+  } else if(target === 'sms'){
+    window.location.href = 'sms:?body=' + encodeURIComponent(text);
+  }
 };
 
 // LOAD AND RENDER PRIVATE REFERRAL DATA FOR CURRENT LOGGED IN USER
