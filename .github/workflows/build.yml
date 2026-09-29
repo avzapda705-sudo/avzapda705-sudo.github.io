@@ -1,4 +1,4 @@
-name: Build Android APK from HTML
+Name: Build Android APK from HTML
 
 on:
   workflow_dispatch:
@@ -117,17 +117,12 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 73
-                  versionName "8.9"
+                  versionCode 72
+                  versionName "8.8"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
-              }
-              signingConfigs {
-                  debug {
-                      storeFile file("${System.getProperty('user.home')}/.android/debug.keystore")
-                  }
               }
               buildTypes {
                   release {
