@@ -92,18 +92,13 @@ jobs:
 
           cat > settings.gradle <<'EOF'
           pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
           }
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
+              repositories { 
                   google()
                   mavenCentral()
-                  maven { url "https://dl.bintray.com/inmobi/inmobi-sdk" }
                   maven { url "https://repository.inmobi.com/android/" }
               }
           }
@@ -126,9 +121,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 73
-                  versionName "8.9"
-                  multiDexEnabled true
+                  versionCode 72
+                  versionName "8.8"
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -146,7 +140,6 @@ jobs:
               implementation "androidx.cardview:cardview:1.0.0"
               implementation "com.inmobi.monetization:ads-sdk:10.8.0"
               implementation "com.google.android.gms:play-services-ads-identifier:18.2.0"
-              implementation "androidx.multidex:multidex:2.0.1"
           }
           EOF
 
@@ -158,7 +151,6 @@ jobs:
               <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
               <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
               <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
-
               <application
                   android:allowBackup="true"
                   android:label="Watch To Earn"
@@ -188,79 +180,81 @@ jobs:
 
           import android.annotation.SuppressLint;
           import android.app.Activity;
+          import android.app.Dialog;
           import android.content.Intent;
           import android.graphics.Color;
           import android.net.Uri;
           import android.net.http.SslError;
           import android.os.Bundle;
+          import android.os.CountDownTimer;
           import android.os.Handler;
           import android.os.Looper;
           import android.util.TypedValue;
           import android.view.Gravity;
+          import android.view.MotionEvent;
+          import android.view.View;
+          import android.view.ViewGroup;
+          import android.view.Window;
           import android.webkit.JavascriptInterface;
           import android.webkit.SslErrorHandler;
           import android.webkit.WebChromeClient;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
+          import android.widget.Button;
           import android.widget.FrameLayout;
-          import android.widget.Toast;
+          import android.widget.LinearLayout;
+          import android.widget.TextView;
+          import androidx.cardview.widget.CardView;
+          import java.util.ArrayList;
+          import java.util.Collections;
+          import java.util.List;
+          import java.util.Map;
 
           import com.inmobi.ads.AdMetaInfo;
           import com.inmobi.ads.InMobiAdRequestStatus;
           import com.inmobi.ads.InMobiBanner;
           import com.inmobi.ads.InMobiInterstitial;
-          import com.inmobi.ads.InMobiNative;
           import com.inmobi.ads.listeners.BannerAdEventListener;
           import com.inmobi.ads.listeners.InterstitialAdEventListener;
-          import com.inmobi.ads.listeners.NativeAdEventListener;
           import com.inmobi.sdk.InMobiSdk;
           import com.inmobi.sdk.SdkInitializationListener;
-
           import org.json.JSONException;
           import org.json.JSONObject;
-          import java.util.Map;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
-              private InMobiBanner inMobiBanner;
+              private InMobiBanner bannerWebView;
               private InMobiInterstitial rewardedAd;
-              private InMobiInterstitial interstitialAd;
-              private InMobiNative inMobiNative;
-
+              private Dialog adDialog;
+              private CardView floatingCardAd;
+              
               private static final String INMOBI_APP_KEY = "10000235577";
               private static final long REWARDED_PLACEMENT_ID = 10000826433L;
               private static final long BANNER_PLACEMENT_ID = 10000826434L;
-              private static final long INTERSTITIAL_PLACEMENT_ID = 10000826437L;
-              private static final long NATIVE_PLACEMENT_ID = 10000826440L;
 
               private final Handler handler = new Handler(Looper.getMainLooper());
-              private FrameLayout rootLayout;
+              private final List<Integer> durationPool = new ArrayList<>();
+              private int poolIndex = 0;
+
+              private synchronized int getNextDuration() {
+                  if (durationPool.isEmpty() || poolIndex >= durationPool.size()) {
+                      durationPool.clear();
+                      durationPool.add(20);
+                      durationPool.add(25);
+                      durationPool.add(30);
+                      Collections.shuffle(durationPool);
+                      poolIndex = 0;
+                  }
+                  return durationPool.get(poolIndex++);
+              }
 
               @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
-
-                  rootLayout = new FrameLayout(this);
-                  rootLayout.setBackgroundColor(Color.parseColor("#0b0f19"));
-
-                  mainWebView = new WebView(this);
-                  setupWeb(mainWebView);
-                  mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
-                  mainWebView.loadUrl("file:///android_asset/index.html");
-
-                  int bannerHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 50, getResources().getDisplayMetrics());
-                  FrameLayout.LayoutParams webParams = new FrameLayout.LayoutParams(-1, -1);
-                  webParams.bottomMargin = bannerHeight;
-                  rootLayout.addView(mainWebView, webParams);
-
-                  setContentView(rootLayout);
-
-                  initInMobiSdk(bannerHeight);
-              }
-
-              private void initInMobiSdk(int bannerHeight) {
+                  
+                  // Initialize InMobi SDK first
                   JSONObject consentObject = new JSONObject();
                   try {
                       consentObject.put(InMobiSdk.IM_GDPR_CONSENT_AVAILABLE, true);
@@ -269,52 +263,104 @@ jobs:
 
                   InMobiSdk.init(this, INMOBI_APP_KEY, consentObject, new SdkInitializationListener() {
                       @Override
-                      public void onInitializationComplete(Error error) {
-                          if (error == null) {
-                              runOnUiThread(() -> {
-                                  setupBannerAd(bannerHeight);
-                                  preloadRewardedAd();
-                                  preloadInterstitialAd();
-                                  loadNativeAd();
-                              });
-                          }
+                      public void onInitializationComplete(Error error) {}
+                  });
+
+                  FrameLayout root = new FrameLayout(this);
+                  root.setBackgroundColor(Color.parseColor("#0b0f19"));
+
+                  mainWebView = new WebView(this);
+                  setupWeb(mainWebView, false);
+                  mainWebView.setWebViewClient(new WebViewClient() {
+                      @Override
+                      public void onPageFinished(WebView view, String url) {
+                          super.onPageFinished(view, url);
+                          hookShowPage(view);
                       }
                   });
-              }
+                  mainWebView.addJavascriptInterface(new AdBridge(), "AndroidAd");
+                  mainWebView.loadUrl("file:///android_asset/index.html");
 
-              private void setupBannerAd(int bannerHeight) {
-                  inMobiBanner = new InMobiBanner(this, BANNER_PLACEMENT_ID);
-                  inMobiBanner.setAnimationType(InMobiBanner.AnimationType.ROTATE_HORIZONTAL_AXIS);
-                  inMobiBanner.setListener(new BannerAdEventListener() {
+                  int bHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 64, getResources().getDisplayMetrics());
+                  FrameLayout.LayoutParams wp = new FrameLayout.LayoutParams(-1, -1);
+                  wp.bottomMargin = bHeight;
+                  root.addView(mainWebView, wp);
+
+                  // InMobi Banner Ad at Bottom
+                  bannerWebView = new InMobiBanner(this, BANNER_PLACEMENT_ID);
+                  bannerWebView.setListener(new BannerAdEventListener() {
                       @Override
                       public void onAdLoadSucceeded(InMobiBanner banner, AdMetaInfo adMetaInfo) {}
-
                       @Override
-                      public void onAdLoadFailed(InMobiBanner banner, InMobiAdRequestStatus status) {
-                          handler.postDelayed(() -> {
-                              if (inMobiBanner != null) inMobiBanner.load();
-                          }, 30000);
-                      }
+                      public void onAdLoadFailed(InMobiBanner banner, InMobiAdRequestStatus status) {}
                   });
+                  FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(-1, bHeight);
+                  bp.gravity = Gravity.BOTTOM;
+                  root.addView(bannerWebView, bp);
+                  bannerWebView.load();
 
-                  FrameLayout.LayoutParams bannerParams = new FrameLayout.LayoutParams(-1, bannerHeight);
-                  bannerParams.gravity = Gravity.BOTTOM;
-                  rootLayout.addView(inMobiBanner, bannerParams);
-                  inMobiBanner.load();
+                  buildCard(root);
+                  setContentView(root);
+
+                  preloadRewardedAd();
+
+                  // Floating Bonus Card Loop
+                  handler.postDelayed(new Runnable() {
+                      @Override
+                      public void run() {
+                          if (!isFinishing() && floatingCardAd != null && mainWebView != null) {
+                              mainWebView.evaluateJavascript(
+                                  "(function(){ var el = document.getElementById('authOverlay'); return (el && el.style.display !== 'none'); })();",
+                                  isLoginOpen -> {
+                                      if ("false".equals(isLoginOpen)) {
+                                          floatingCardAd.setVisibility(View.VISIBLE);
+                                          floatingCardAd.bringToFront();
+                                          handler.postDelayed(() -> {
+                                              if (floatingCardAd != null) floatingCardAd.setVisibility(View.GONE);
+                                          }, 8000);
+                                      }
+                                  }
+                              );
+                          }
+                          handler.postDelayed(this, 25000);
+                      }
+                  }, 8000);
+              }
+
+              private void hookShowPage(WebView view) {
+                  view.evaluateJavascript(
+                      "(function(){" +
+                      "  if (window._pageHooked) return;" +
+                      "  window._pageHooked = true;" +
+                      "  var originalShow = window.showPage;" +
+                      "  window.showPage = function(pageId) {" +
+                      "    if (typeof originalShow === 'function') { originalShow(pageId); }" +
+                      "    var auth = document.getElementById('authOverlay');" +
+                      "    var isLoggedIn = !(auth && auth.style.display !== 'none');" +
+                      "    if (isLoggedIn && ['earn', 'withdraw', 'referral'].includes(pageId)) {" +
+                      "      if (window.AndroidAd) { window.AndroidAd.triggerTabAd(); }" +
+                      "    }" +
+                      "  };" +
+                      "})();",
+                      null
+                  );
               }
 
               private void preloadRewardedAd() {
+                  if (rewardedAd != null) {
+                      try { rewardedAd.destroy(); } catch (Exception ignored) {}
+                  }
                   rewardedAd = new InMobiInterstitial(this, REWARDED_PLACEMENT_ID, new InterstitialAdEventListener() {
                       @Override
                       public void onAdLoadFailed(InMobiInterstitial ad, InMobiAdRequestStatus status) {
                           handler.postDelayed(() -> preloadRewardedAd(), 15000);
                       }
-
                       @Override
                       public void onRewardsUnlocked(InMobiInterstitial ad, Map<Object, Object> rewards) {
-                          grantRewardInWeb();
+                          if (mainWebView != null) {
+                              mainWebView.post(() -> mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();}", null));
+                          }
                       }
-
                       @Override
                       public void onAdDismissed(InMobiInterstitial ad) {
                           preloadRewardedAd();
@@ -323,57 +369,62 @@ jobs:
                   rewardedAd.load();
               }
 
-              private void preloadInterstitialAd() {
-                  interstitialAd = new InMobiInterstitial(this, INTERSTITIAL_PLACEMENT_ID, new InterstitialAdEventListener() {
-                      @Override
-                      public void onAdLoadFailed(InMobiInterstitial ad, InMobiAdRequestStatus status) {
-                          handler.postDelayed(() -> preloadInterstitialAd(), 20000);
-                      }
+              private void buildCard(FrameLayout root) {
+                  floatingCardAd = new CardView(this);
+                  floatingCardAd.setRadius(24);
+                  floatingCardAd.setCardElevation(24);
+                  floatingCardAd.setCardBackgroundColor(Color.WHITE);
+                  floatingCardAd.setVisibility(View.GONE);
 
-                      @Override
-                      public void onAdDismissed(InMobiInterstitial ad) {
-                          preloadInterstitialAd();
-                      }
+                  LinearLayout cl = new LinearLayout(this);
+                  cl.setGravity(Gravity.CENTER_VERTICAL);
+                  cl.setPadding(20, 16, 20, 16);
+
+                  TextView ic = new TextView(this);
+                  ic.setText("🎁");
+                  ic.setTextSize(22);
+                  cl.addView(ic);
+
+                  LinearLayout tl = new LinearLayout(this);
+                  tl.setOrientation(LinearLayout.VERTICAL);
+                  tl.setPadding(16, 0, 8, 0);
+
+                  TextView h = new TextView(this);
+                  h.setText("Special Bonus Available!");
+                  h.setTextColor(Color.BLACK);
+                  h.setTextSize(14);
+
+                  TextView s = new TextView(this);
+                  s.setText("Tap to view offer & earn coins");
+                  s.setTextColor(Color.GRAY);
+                  s.setTextSize(11);
+
+                  tl.addView(h);
+                  tl.addView(s);
+                  cl.addView(tl, new LinearLayout.LayoutParams(0, -2, 1.0f));
+
+                  TextView close = new TextView(this);
+                  close.setText("✖");
+                  close.setTextSize(18);
+                  close.setTextColor(Color.GRAY);
+                  close.setPadding(12, 12, 12, 12);
+                  close.setOnClickListener(v -> floatingCardAd.setVisibility(View.GONE));
+                  cl.addView(close);
+
+                  cl.setOnClickListener(v -> {
+                      floatingCardAd.setVisibility(View.GONE);
+                      showAd();
                   });
-                  interstitialAd.load();
+
+                  floatingCardAd.addView(cl);
+                  FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(-1, -2);
+                  cp.gravity = Gravity.TOP;
+                  int topMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 110, getResources().getDisplayMetrics());
+                  cp.setMargins(24, topMargin, 24, 0);
+                  root.addView(floatingCardAd, cp);
               }
 
-              private void loadNativeAd() {
-                  inMobiNative = new InMobiNative(this, NATIVE_PLACEMENT_ID, new NativeAdEventListener() {
-                      @Override
-                      public void onAdLoadSucceeded(InMobiNative ad, AdMetaInfo info) {
-                          runOnUiThread(() -> {
-                              if (mainWebView != null && ad != null) {
-                                  String title = ad.getAdTitle() != null ? ad.getAdTitle().replace("'", "\\'") : "";
-                                  String desc = ad.getAdDescription() != null ? ad.getAdDescription().replace("'", "\\'") : "";
-                                  String iconUrl = ad.getAdIconUrl() != null ? ad.getAdIconUrl() : "";
-                                  String clickUrl = ad.getAdLandingPageUrl() != null ? ad.getAdLandingPageUrl() : "";
-
-                                  mainWebView.evaluateJavascript(
-                                      "if(window.renderNativeAd){window.renderNativeAd('" + title + "', '" + desc + "', '" + iconUrl + "', '" + clickUrl + "');}",
-                                      null
-                                  );
-                              }
-                          });
-                      }
-
-                      @Override
-                      public void onAdLoadFailed(InMobiNative ad, InMobiAdRequestStatus status) {
-                          handler.postDelayed(() -> loadNativeAd(), 30000);
-                      }
-                  });
-                  inMobiNative.load();
-              }
-
-              private void grantRewardInWeb() {
-                  runOnUiThread(() -> {
-                      if (mainWebView != null) {
-                          mainWebView.evaluateJavascript("if(window.adMobRewardEarned){window.adMobRewardEarned();}", null);
-                      }
-                  });
-              }
-
-              private void setupWeb(WebView wv) {
+              private void setupWeb(WebView wv, boolean disableCache) {
                   WebSettings s = wv.getSettings();
                   s.setJavaScriptEnabled(true);
                   s.setDomStorageEnabled(true);
@@ -382,12 +433,18 @@ jobs:
                   s.setAllowContentAccess(true);
                   s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
                   s.setMediaPlaybackRequiresUserGesture(false);
+                  if (disableCache) {
+                      s.setCacheMode(WebSettings.LOAD_NO_CACHE);
+                  } else {
+                      s.setCacheMode(WebSettings.LOAD_DEFAULT);
+                  }
                   s.setUserAgentString(s.getUserAgentString() + " MobileApp");
                   wv.setWebChromeClient(new WebChromeClient());
                   wv.setWebViewClient(new WebViewClient() {
                       @Override
                       public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                          if (url != null && (url.startsWith("intent://") || url.startsWith("whatsapp://") || url.startsWith("tg://") || url.startsWith("sms:"))) {
+                          if (url == null) return false;
+                          if (url.startsWith("intent://") || url.startsWith("whatsapp://") || url.startsWith("tg://") || url.startsWith("sms:")) {
                               try {
                                   Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
                                   startActivity(intent);
@@ -396,7 +453,6 @@ jobs:
                           }
                           return false;
                       }
-
                       @Override
                       public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
                           handler.proceed();
@@ -406,60 +462,34 @@ jobs:
 
               public class AdBridge {
                   @JavascriptInterface
-                  public void showRewarded() {
-                      runOnUiThread(() -> {
-                          if (rewardedAd != null && rewardedAd.isReady()) {
-                              rewardedAd.show();
-                          } else {
-                              Toast.makeText(MainActivity.this, "Loading ad, please try in 3 seconds...", Toast.LENGTH_SHORT).show();
-                              if (rewardedAd != null) rewardedAd.load();
-                          }
-                      });
-                  }
-
+                  public void showRewarded() { runOnUiThread(() -> showAd()); }
                   @JavascriptInterface
-                  public void showInterstitial() {
-                      runOnUiThread(() -> {
-                          if (interstitialAd != null && interstitialAd.isReady()) {
-                              interstitialAd.show();
-                          } else if (interstitialAd != null) {
-                              interstitialAd.load();
-                          }
-                      });
-                  }
-
+                  public void showInterstitial() { runOnUiThread(() -> showAd()); }
                   @JavascriptInterface
-                  public void triggerTabAd() {
-                      showInterstitial();
-                  }
+                  public void triggerTabAd() { showAd(); }
+              }
 
-                  @JavascriptInterface
-                  public void openExternalUrl(String url) {
-                      if (url != null && !url.isEmpty()) {
-                          try {
-                              Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                              startActivity(intent);
-                          } catch (Exception ignored) {}
-                      }
+              private void showAd() {
+                  if (rewardedAd != null && rewardedAd.isReady()) {
+                      rewardedAd.show();
+                  } else {
+                      Toast.makeText(this, "Ad loading, please try in a moment...", Toast.LENGTH_SHORT).show();
+                      if (rewardedAd != null) rewardedAd.load();
                   }
               }
 
               @Override
               protected void onDestroy() {
                   handler.removeCallbacksAndMessages(null);
-                  if (inMobiBanner != null) inMobiBanner.destroy();
-                  if (inMobiNative != null) inMobiNative.destroy();
+                  if (bannerWebView != null) bannerWebView.destroy();
                   if (mainWebView != null) mainWebView.destroy();
                   super.onDestroy();
               }
 
               @Override
               public void onBackPressed() {
-                  if (mainWebView != null && mainWebView.canGoBack()) {
-                      mainWebView.goBack();
-                  } else {
-                      super.onBackPressed();
-                  }
+                  if (mainWebView != null && mainWebView.canGoBack()) mainWebView.goBack();
+                  else super.onBackPressed();
               }
           }
           EOF
