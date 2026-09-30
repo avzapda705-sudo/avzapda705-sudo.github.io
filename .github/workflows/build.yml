@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 76
-                  versionName "10.1"
+                  versionCode 77
+                  versionName "10.2"
                   multiDexEnabled true
               }
               compileOptions {
@@ -265,6 +265,9 @@ jobs:
                   bannerView.setListener(new BannerView.IListener() {
                       @Override
                       public void onBannerLoaded(BannerView bannerAdView) {}
+
+                      @Override
+                      public void onBannerShown(BannerView bannerAdView) {}
 
                       @Override
                       public void onBannerFailedToLoad(BannerView bannerAdView, BannerErrorInfo errorInfo) {
