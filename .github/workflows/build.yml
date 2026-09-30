@@ -30,7 +30,7 @@ jobs:
         run: |
           set -e
 
-          mkdir -p app/src/main/java/com/watchtoearn/app
+          mkdir -p app/src/main/java/com/watchtoearn/cash
           mkdir -p app/src/main/assets
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/mipmap-mdpi
@@ -114,14 +114,14 @@ jobs:
           cat > app/build.gradle <<'EOF'
           plugins { id 'com.android.application' }
           android {
-              namespace "com.watchtoearn.app"
+              namespace "com.watchtoearn.cash"
               compileSdk 35
               defaultConfig {
-                  applicationId "com.watchtoearn.app"
+                  applicationId "com.watchtoearn.cash"
                   minSdk 24
                   targetSdk 35
-                  versionCode 82
-                  versionName "12.2"
+                  versionCode 83
+                  versionName "12.3"
                   multiDexEnabled true
               }
               signingConfigs {
@@ -188,8 +188,8 @@ jobs:
           </manifest>
           EOF
 
-          cat > app/src/main/java/com/watchtoearn/app/MainActivity.java <<'EOF'
-          package com.watchtoearn.app;
+          cat > app/src/main/java/com/watchtoearn/cash/MainActivity.java <<'EOF'
+          package com.watchtoearn.cash;
 
           import android.annotation.SuppressLint;
           import android.app.Activity;
