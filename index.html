@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="monetag" content="bfc88b20fcff440ad7941bf0e28c08d0">
 <title>Watch to Earn</title>
 
 <style>
@@ -628,7 +629,7 @@ transition:all .15s ease
         <path d="M110 320 C110 405 210 455 315 440" fill="none" stroke="url(#topGoldGrad)" stroke-width="12" stroke-linecap="round" opacity="0.85"/>
         <circle cx="340" cy="315" r="105" fill="url(#topGoldGrad)" stroke="#ffffff" stroke-width="6"/>
         <circle cx="340" cy="315" r="88" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-dasharray="8,6"/>
-        <text x="340" y="355" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="900" font-size="115" fill="#451a03" text-anchor="middle">₹</text>
+        <text x="340" y="355" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="900" font-size="115" fill="#451a03" text-anchor="middle">🪙</text>
       </svg>
     </div>
     <div>
@@ -650,7 +651,7 @@ transition:all .15s ease
 <span class="ticker-badge">⚡ LIVE</span>
 <div class="ticker-marquee">
 <div class="ticker-content" id="liveTickerText">
-🟢 Rahul (987***@upi) withdrew ₹1 • 🟢 Amit (912***@upi) withdrew ₹2 • 🟢 Priya (884***@upi) withdrew ₹1
+🟢 Rahul Patel (9879***@paytm) withdrew 200 Coins • 🟢 Jayesh S. (j.k***@okaxis) withdrew 500 Coins • 🟢 Amit Shah (amit.8***@oksbi) withdrew 1000 Coins
 </div>
 </div>
 </div>
@@ -692,21 +693,6 @@ onclick="triggerAdMob('bonus')"
 style="margin-top:16px;background:linear-gradient(135deg,#059669,#10b981,#34d399)">
 🎁 CLAIM DAILY BONUS
 </button>
-</div>
-
-<!-- INMOBI NATIVE AD CONTAINER -->
-<div class="card" id="nativeAdCard" style="display:none;padding:16px;">
-  <div style="font-size:11px;color:#a855f7;font-weight:800;letter-spacing:0.5px;margin-bottom:8px">SPONSORED</div>
-  <div style="display:flex;gap:12px;align-items:center;">
-    <img id="nativeAdIcon" src="" style="width:48px;height:48px;border-radius:12px;object-fit:cover;display:none" alt="Ad Icon">
-    <div style="flex:1;">
-      <h3 id="nativeAdTitle" style="margin:0;font-size:15px;color:var(--text-main);font-weight:700"></h3>
-      <div id="nativeAdDesc" class="muted" style="font-size:12px;margin-top:2px;"></div>
-    </div>
-  </div>
-  <button id="nativeAdCta" class="btn" style="margin-top:12px;padding:10px;font-size:13px;background:linear-gradient(135deg,#3b82f6,#2563eb)">
-    LEARN MORE
-  </button>
 </div>
 
 <!-- NEW: MYSTERY SURPRISE BOX (30 MIN COOLDOWN) -->
@@ -1069,7 +1055,7 @@ style="background:linear-gradient(135deg,#2563eb,#3b82f6);font-size:15px;padding
         <path d="M110 320 C110 405 210 455 315 440" fill="none" stroke="url(#topGoldGrad)" stroke-width="12" stroke-linecap="round" opacity="0.85"/>
         <circle cx="340" cy="315" r="105" fill="url(#topGoldGrad)" stroke="#ffffff" stroke-width="6"/>
         <circle cx="340" cy="315" r="88" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-dasharray="8,6"/>
-        <text x="340" y="355" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="900" font-size="115" fill="#451a03" text-anchor="middle">₹</text>
+        <text x="340" y="355" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-weight="900" font-size="115" fill="#451a03" text-anchor="middle">🪙</text>
       </svg>
     </div>
     <h2 style="font-size:22px;margin:0 0 4px">Watch to Earn</h2>
@@ -1697,33 +1683,6 @@ doSpin();
 pendingRewardType=null;
 };
 
-/* =====================================
-   INMOBI NATIVE AD RENDERER
-   ==================================== */
-window.renderNativeAd = function(title, desc, iconUrl, clickUrl) {
-  var card = document.getElementById('nativeAdCard');
-  if (!card) return;
-  
-  if (title) document.getElementById('nativeAdTitle').textContent = title;
-  if (desc) document.getElementById('nativeAdDesc').textContent = desc;
-  
-  var icon = document.getElementById('nativeAdIcon');
-  if (iconUrl) {
-    icon.src = iconUrl;
-    icon.style.display = 'block';
-  }
-  
-  var cta = document.getElementById('nativeAdCta');
-  cta.onclick = function() {
-    if (window.AndroidAd && window.AndroidAd.openExternalUrl) {
-      window.AndroidAd.openExternalUrl(clickUrl);
-    } else {
-      window.open(clickUrl, '_blank');
-    }
-  };
-  card.style.display = 'block';
-};
-
 /* =========================
    SPIN ACTIONS
    ========================= */
@@ -1848,10 +1807,11 @@ $('amount').value='';
 renderHistory();
 toast('Withdrawal request submitted!');
 
+// Real User withdrawal entry pushed directly in Coins
 var masked = maskUpi(upi);
 var ticker = $('liveTickerText');
 if(ticker){
-var liveEntry = '🟢 ' + userName + ' (' + masked + ') withdrew ₹' + inrAmount + ' • ';
+var liveEntry = '🟢 ' + userName + ' (' + masked + ') withdrew ' + amount + ' Coins • ';
 ticker.innerHTML = liveEntry + ticker.innerHTML;
 }
 
@@ -1883,32 +1843,108 @@ body: JSON.stringify({
 }).catch(function(err){});
 };
 
-function fetchLiveWithdrawals(){
-fetch(FIREBASE_DB_URL + ".json")
-.then(function(res){ return res.json(); })
-.then(function(data){
-  if(!data) return;
-  var keys = Object.keys(data);
-  if(!keys.length) return;
-  
-  keys.sort().reverse();
-  var latest = keys.slice(0, 8);
-  var tickerItems = [];
-  
-  latest.forEach(function(k){
-    var item = data[k];
-    if(item && item.upi){
-      var uName = item.user || 'User';
-      var uUpi = maskUpi(item.upi);
-      var inr = item.inr || ('₹' + Math.max(1, Math.floor((item.amount || 200) / 200)));
-      tickerItems.push('🟢 ' + uName + ' (' + uUpi + ') withdrew ' + inr);
-    }
-  });
-  
-  if(tickerItems.length && $('liveTickerText')){$('liveTickerText').innerHTML = tickerItems.join(' • ') + ' • ';
+/* ========================================================
+   NATURAL HIGH-VOLUME LIVE COIN TICKER (REAL + 35+ AUTO USERS)
+   ======================================================== */
+var regularCoinPool = [100, 200, 200, 500, 200, 1000, 500, 200, 1000, 200, 500, 200, 1000];
+var rareCoinPool = [11, 1550, 2000, 2500, 1850, 3000];
+
+var fakeUsers = [
+  { name: "Rahul Patel", handle: "9879***@paytm" },
+  { name: "Jayesh S.", handle: "j.k***@okaxis" },
+  { name: "Amit Shah", handle: "amit.8***@oksbi" },
+  { name: "Pooja V.", handle: "pooja***@ybl" },
+  { name: "Hardik P.", handle: "9725***@paytm" },
+  { name: "Sneha M.", handle: "sneha***@okhdfcbank" },
+  { name: "Kunal D.", handle: "kunal***@icici" },
+  { name: "Vikram R.", handle: "9904***@ybl" },
+  { name: "Neha Joshi", handle: "neha.j***@okhdfcbank" },
+  { name: "Bhavin T.", handle: "9824***@okaxis" },
+  { name: "Alpesh Rathod", handle: "alpesh***@paytm" },
+  { name: "Divya Parmar", handle: "divya.p***@oksbi" },
+  { name: "Mayur G.", handle: "9601***@ybl" },
+  { name: "Kiran Vaghela", handle: "kiran.v***@okaxis" },
+  { name: "Hiren Makwana", handle: "hiren***@paytm" },
+  { name: "Meera Trivedi", handle: "meera.t***@okhdfcbank" },
+  { name: "Sachin K.", handle: "9712***@ybl" },
+  { name: "Prakash Solanki", handle: "prakash***@icici" },
+  { name: "Jignesh Desai", handle: "jignesh.d***@oksbi" },
+  { name: "Chetan B.", handle: "9898***@paytm" },
+  { name: "Deepak Soni", handle: "deepak***@okaxis" },
+  { name: "Roshni M.", handle: "roshni.m***@ybl" },
+  { name: "Vishal Gondaliya", handle: "vishal.g***@okhdfcbank" },
+  { name: "Nitin Barot", handle: "9974***@paytm" },
+  { name: "Umesh Prajapati", handle: "umesh.p***@oksbi" },
+  { name: "Anjali Dave", handle: "anjali***@ybl" },
+  { name: "Pratik Chovatiya", handle: "pratik***@icici" },
+  { name: "Dhaval V.", handle: "9825***@okaxis" },
+  { name: "Nilesh Moradiya", handle: "nilesh.m***@paytm" },
+  { name: "Kavita Zala", handle: "kavita***@oksbi" },
+  { name: "Sanjay D.", handle: "9727***@ybl" },
+  { name: "Rakesh Kanzariya", handle: "rakesh.k***@okhdfcbank" },
+  { name: "Chirag Dobariya", handle: "chirag***@paytm" },
+  { name: "Hetal Panchal", handle: "hetal.p***@okaxis" },
+  { name: "Mahesh B.", handle: "9913***@oksbi" }
+];
+
+var realWithdrawalsList = [];
+
+function getRandomFakeEntry() {
+  var u = fakeUsers[Math.floor(Math.random() * fakeUsers.length)];
+  // 90% chance regular coins, 10% rare big jackpot coins
+  var isRare = Math.random() < 0.10;
+  var c = isRare 
+    ? rareCoinPool[Math.floor(Math.random() * rareCoinPool.length)]
+    : regularCoinPool[Math.floor(Math.random() * regularCoinPool.length)];
+  return '🟢 ' + u.name + ' (' + u.handle + ') withdrew ' + c + ' Coins';
+}
+
+function fetchLiveWithdrawals() {
+  fetch(FIREBASE_DB_URL + ".json")
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      if(!data) return;
+      var keys = Object.keys(data);
+      if(!keys.length) return;
+      
+      keys.sort().reverse();
+      var latest = keys.slice(0, 10);
+      realWithdrawalsList = [];
+      
+      latest.forEach(function(k){
+        var item = data[k];
+        if(item && item.upi){
+          var uName = item.user || 'User';
+          var uUpi = maskUpi(item.upi);
+          var coinVal = item.amount || 200;
+          realWithdrawalsList.push('🟢 ' + uName + ' (' + uUpi + ') withdrew ' + coinVal + ' Coins');
+        }
+      });
+      renderMarqueeTicker();
+    })
+    .catch(function(e){});
+
+  renderMarqueeTicker();
+
+  setInterval(function(){
+    renderMarqueeTicker();
+  }, 10000);
+}
+
+function renderMarqueeTicker() {
+  var el = $('liveTickerText');
+  if(!el) return;
+
+  var items = [];
+  if(realWithdrawalsList.length > 0) {
+    items.push(realWithdrawalsList[0]);
   }
-})
-.catch(function(e){});
+  
+  while(items.length < 5) {
+    items.push(getRandomFakeEntry());
+  }
+
+  el.innerHTML = items.join(' • ') + ' • ';
 }
 
 function syncLiveStatuses(){
@@ -2421,6 +2457,7 @@ updateProfileDisplay();
 toast('Logged out successfully');
 };
 
+/* Anti-Cheat: Cloud Daily Limits Restore */
 function restoreCloudDailyLimits(userData){
 if(!userData) return;
 var today = day();
@@ -2448,6 +2485,7 @@ function checkUserAuth(){
 var activePhone = localStorage.getItem('wte_phone');
 if(!activePhone){
   $('authOverlay').style.display = 'flex';
+  
   var refParam = getUrlParameter('ref');
   if(refParam){
     switchAuthTab('signup');
