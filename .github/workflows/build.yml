@@ -242,12 +242,6 @@ jobs:
 
               @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
               @Override
-              protected void resourceConfig(Bundle savedInstanceState) {
-                  // helper
-              }
-
-              @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
-              @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
