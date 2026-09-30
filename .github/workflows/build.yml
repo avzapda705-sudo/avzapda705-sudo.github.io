@@ -117,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 78
-                  versionName "11.0"
+                  versionCode 81
+                  versionName "12.1"
                   multiDexEnabled true
               }
               compileOptions {
@@ -157,10 +157,10 @@ jobs:
                   android:theme="@android:style/Theme.NoTitleBar"
                   android:hardwareAccelerated="true">
 
-                  <!-- Google AdMob Official Sample App ID -->
+                  <!-- Your Real Google AdMob Application ID -->
                   <meta-data
                       android:name="com.google.android.gms.ads.APPLICATION_ID"
-                      android:value="ca-app-pub-3940256099942544~3347511713"/>
+                      android:value="ca-app-pub-5150845800087406~5053707077"/>
 
                   <activity
                       android:name=".MainActivity"
@@ -222,10 +222,10 @@ jobs:
               private RewardedAd rewardedAd;
               private InterstitialAd interstitialAd;
 
-              // Official Google AdMob Test Ad Unit IDs (Always serve ads instantly)
-              private static final String ADMOB_BANNER_ID = "ca-app-pub-3940256099942544/6300978111";
-              private static final String ADMOB_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917";
-              private static final String ADMOB_INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712";
+              // Your Real AdMob Ad Unit IDs
+              private static final String ADMOB_BANNER_ID = "ca-app-pub-5150845800087406/6197511099";
+              private static final String ADMOB_REWARDED_ID = "ca-app-pub-5150845800087406/8823674432";
+              private static final String ADMOB_INTERSTITIAL_ID = "ca-app-pub-5150845800087406/2477757939";
 
               private final Handler handler = new Handler(Looper.getMainLooper());
 
