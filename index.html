@@ -1891,7 +1891,6 @@ var realWithdrawalsList = [];
 
 function getRandomFakeEntry() {
   var u = fakeUsers[Math.floor(Math.random() * fakeUsers.length)];
-  // 90% chance regular coins, 10% rare big jackpot coins
   var isRare = Math.random() < 0.10;
   var c = isRare 
     ? rareCoinPool[Math.floor(Math.random() * rareCoinPool.length)]
