@@ -83,6 +83,9 @@ jobs:
           EOF
           fi
 
+          # Generate a Release Keystore
+          keytool -genkeypair -v -keystore app/release.keystore -alias watchtoearn -keyalg RSA -keysize 2048 -validity 10000 -storepass watchtoearn123 -keypass watchtoearn123 -dname "CN=WatchToEarn, OU=Mobile, O=WatchToEarn, L=Surat, ST=Gujarat, C=IN"
+
           cat > gradle.properties <<'EOF'
           android.useAndroidX=true
           android.enableJetifier=true
@@ -117,9 +120,17 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 81
-                  versionName "12.1"
+                  versionCode 82
+                  versionName "12.2"
                   multiDexEnabled true
+              }
+              signingConfigs {
+                  release {
+                      storeFile file('release.keystore')
+                      storePassword 'watchtoearn123'
+                      keyAlias 'watchtoearn'
+                      keyPassword 'watchtoearn123'
+                  }
               }
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
@@ -128,7 +139,7 @@ jobs:
               buildTypes {
                   release {
                       minifyEnabled false
-                      signingConfig signingConfigs.debug
+                      signingConfig signingConfigs.release
                   }
               }
           }
@@ -228,6 +239,12 @@ jobs:
               private static final String ADMOB_INTERSTITIAL_ID = "ca-app-pub-5150845800087406/2477757939";
 
               private final Handler handler = new Handler(Looper.getMainLooper());
+
+              @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
+              @Override
+              protected void resourceConfig(Bundle savedInstanceState) {
+                  // helper
+              }
 
               @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
               @Override
