@@ -92,18 +92,11 @@ jobs:
 
           cat > settings.gradle <<'EOF'
           pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
+              repositories { google(); mavenCentral(); gradlePluginPortal() }
           }
           dependencyResolutionManagement {
               repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
+              repositories { google(); mavenCentral() }
           }
           rootProject.name = "WatchToEarn"
           include(":app")
@@ -124,8 +117,8 @@ jobs:
                   applicationId "com.watchtoearn.app"
                   minSdk 24
                   targetSdk 35
-                  versionCode 74
-                  versionName "9.0"
+                  versionCode 76
+                  versionName "10.1"
                   multiDexEnabled true
               }
               compileOptions {
@@ -142,9 +135,7 @@ jobs:
           dependencies {
               implementation "androidx.annotation:annotation:1.9.1"
               implementation "androidx.cardview:cardview:1.0.0"
-              implementation "androidx.browser:browser:1.8.0"
-              implementation "com.inmobi.monetization:inmobi-ads-kotlin:10.8.0"
-              implementation "com.google.android.gms:play-services-ads-identifier:18.2.0"
+              implementation "com.unity3d.ads:unity-ads:4.12.3"
               implementation "androidx.multidex:multidex:2.0.1"
           }
           EOF
@@ -154,8 +145,6 @@ jobs:
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-              <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-              <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
               <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
               <application
@@ -205,36 +194,30 @@ jobs:
           import android.widget.FrameLayout;
           import android.widget.Toast;
 
-          import com.inmobi.ads.AdMetaInfo;
-          import com.inmobi.ads.InMobiAdRequestStatus;
-          import com.inmobi.ads.InMobiBanner;
-          import com.inmobi.ads.InMobiInterstitial;
-          import com.inmobi.ads.InMobiNative;
-          import com.inmobi.ads.listeners.BannerAdEventListener;
-          import com.inmobi.ads.listeners.InterstitialAdEventListener;
-          import com.inmobi.ads.listeners.NativeAdEventListener;
-          import com.inmobi.sdk.InMobiSdk;
-          import com.inmobi.sdk.SdkInitializationListener;
-
-          import org.json.JSONException;
-          import org.json.JSONObject;
-          import java.util.Map;
+          import com.unity3d.ads.IUnityAdsInitializationListener;
+          import com.unity3d.ads.IUnityAdsLoadListener;
+          import com.unity3d.ads.IUnityAdsShowListener;
+          import com.unity3d.ads.UnityAds;
+          import com.unity3d.ads.UnityAdsShowOptions;
+          import com.unity3d.services.banners.BannerErrorInfo;
+          import com.unity3d.services.banners.BannerView;
+          import com.unity3d.services.banners.UnityBannerSize;
 
           public class MainActivity extends Activity {
               private WebView mainWebView;
-              private InMobiBanner inMobiBanner;
-              private InMobiInterstitial rewardedAd;
-              private InMobiInterstitial interstitialAd;
-              private InMobiNative inMobiNative;
-
-              private static final String INMOBI_APP_KEY = "10000235577";
-              private static final long REWARDED_PLACEMENT_ID = 10000826433L;
-              private static final long BANNER_PLACEMENT_ID = 10000826434L;
-              private static final long INTERSTITIAL_PLACEMENT_ID = 10000826437L;
-              private static final long NATIVE_PLACEMENT_ID = 10000826440L;
-
-              private final Handler handler = new Handler(Looper.getMainLooper());
               private FrameLayout rootLayout;
+              private BannerView bannerView;
+
+              private static final String UNITY_GAME_ID = "800381847";
+              private static final boolean TEST_MODE = true;
+
+              private static final String REWARDED_PLACEMENT = "BP_Rewarded_Android";
+              private static final String INTERSTITIAL_PLACEMENT = "BP_Interstitial_Android";
+              private static final String BANNER_PLACEMENT = "BP_Banner_Android";
+
+              private boolean isRewardedLoaded = false;
+              private boolean isInterstitialLoaded = false;
+              private final Handler handler = new Handler(Looper.getMainLooper());
 
               @SuppressLint({"SetJavaScriptEnabled", "ClickableViewAccessibility"})
               @Override
@@ -256,112 +239,82 @@ jobs:
 
                   setContentView(rootLayout);
 
-                  initInMobiSdk(bannerHeight);
+                  initUnityAds();
               }
 
-              private void initInMobiSdk(int bannerHeight) {
-                  JSONObject consentObject = new JSONObject();
-                  try {
-                      consentObject.put(InMobiSdk.IM_GDPR_CONSENT_AVAILABLE, true);
-                      consentObject.put("gdpr", "0");
-                  } catch (JSONException ignored) {}
-
-                  InMobiSdk.init(this, INMOBI_APP_KEY, consentObject, new SdkInitializationListener() {
+              private void initUnityAds() {
+                  UnityAds.initialize(getApplicationContext(), UNITY_GAME_ID, TEST_MODE, new IUnityAdsInitializationListener() {
                       @Override
-                      public void onInitializationComplete(Error error) {
-                          if (error == null) {
-                              runOnUiThread(() -> {
-                                  setupBannerAd(bannerHeight);
-                                  preloadRewardedAd();
-                                  preloadInterstitialAd();
-                                  loadNativeAd();
-                              });
-                          }
-                      }
-                  });
-              }
-
-              private void setupBannerAd(int bannerHeight) {
-                  inMobiBanner = new InMobiBanner(this, BANNER_PLACEMENT_ID);
-                  inMobiBanner.setAnimationType(InMobiBanner.AnimationType.ROTATE_HORIZONTAL_AXIS);
-                  inMobiBanner.setListener(new BannerAdEventListener() {
-                      @Override
-                      public void onAdLoadSucceeded(InMobiBanner banner, AdMetaInfo adMetaInfo) {}
-
-                      @Override
-                      public void onAdLoadFailed(InMobiBanner banner, InMobiAdRequestStatus status) {
-                          handler.postDelayed(() -> {
-                              if (inMobiBanner != null) inMobiBanner.load();
-                          }, 30000);
-                      }
-                  });
-
-                  FrameLayout.LayoutParams bannerParams = new FrameLayout.LayoutParams(-1, bannerHeight);
-                  bannerParams.gravity = Gravity.BOTTOM;
-                  rootLayout.addView(inMobiBanner, bannerParams);
-                  inMobiBanner.load();
-              }
-
-              private void preloadRewardedAd() {
-                  rewardedAd = new InMobiInterstitial(this, REWARDED_PLACEMENT_ID, new InterstitialAdEventListener() {
-                      @Override
-                      public void onAdLoadFailed(InMobiInterstitial ad, InMobiAdRequestStatus status) {
-                          handler.postDelayed(() -> preloadRewardedAd(), 15000);
-                      }
-
-                      @Override
-                      public void onRewardsUnlocked(InMobiInterstitial ad, Map<Object, Object> rewards) {
-                          grantRewardInWeb();
-                      }
-
-                      @Override
-                      public void onAdDismissed(InMobiInterstitial ad) {
-                          preloadRewardedAd();
-                      }
-                  });
-                  rewardedAd.load();
-              }
-
-              private void preloadInterstitialAd() {
-                  interstitialAd = new InMobiInterstitial(this, INTERSTITIAL_PLACEMENT_ID, new InterstitialAdEventListener() {
-                      @Override
-                      public void onAdLoadFailed(InMobiInterstitial ad, InMobiAdRequestStatus status) {
-                          handler.postDelayed(() -> preloadInterstitialAd(), 20000);
-                      }
-
-                      @Override
-                      public void onAdDismissed(InMobiInterstitial ad) {
-                          preloadInterstitialAd();
-                      }
-                  });
-                  interstitialAd.load();
-              }
-
-              private void loadNativeAd() {
-                  inMobiNative = new InMobiNative(this, NATIVE_PLACEMENT_ID, new NativeAdEventListener() {
-                      @Override
-                      public void onAdLoadSucceeded(InMobiNative ad, AdMetaInfo info) {
+                      public void onInitializationComplete() {
                           runOnUiThread(() -> {
-                              if (mainWebView != null && ad != null) {
-                                  String title = ad.getAdTitle() != null ? ad.getAdTitle().replace("'", "\\'") : "";
-                                  String desc = ad.getAdDescription() != null ? ad.getAdDescription().replace("'", "\\'") : "";
-                                  String iconUrl = ad.getAdIconUrl() != null ? ad.getAdIconUrl() : "";
-                                  String clickUrl = ad.getAdLandingPageUrl() != null ? ad.getAdLandingPageUrl() : "";
-
-                                  mainWebView.evaluateJavascript(
-                                      "if(window.renderNativeAd){window.renderNativeAd('" + title + "', '" + desc + "', '" + iconUrl + "', '" + clickUrl + "');}",
-                                      null
-                                  );
-                              }
+                              loadRewardedAd();
+                              loadInterstitialAd();
+                              setupBanner();
                           });
                       }
 
                       @Override
-                      public void onAdLoadFailed(InMobiNative ad, InMobiAdRequestStatus status) {
-                          handler.postDelayed(() -> loadNativeAd(), 30000);
+                      public void onInitializationFailed(UnityAds.UnityAdsInitializationError error, String message) {
+                          handler.postDelayed(() -> initUnityAds(), 10000);
                       }
                   });
-                  inMobiNative.load();
+              }
+
+              private void setupBanner() {
+                  bannerView = new BannerView(this, BANNER_PLACEMENT, new UnityBannerSize(320, 50));
+                  bannerView.setListener(new BannerView.IListener() {
+                      @Override
+                      public void onBannerLoaded(BannerView bannerAdView) {}
+
+                      @Override
+                      public void onBannerFailedToLoad(BannerView bannerAdView, BannerErrorInfo errorInfo) {
+                          handler.postDelayed(() -> {
+                              if (bannerView != null) bannerView.load();
+                          }, 30000);
+                      }
+
+                      @Override
+                      public void onBannerClick(BannerView bannerAdView) {}
+
+                      @Override
+                      public void onBannerLeftApplication(BannerView bannerAdView) {}
+                  });
+
+                  int bannerHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 50, getResources().getDisplayMetrics());
+                  FrameLayout.LayoutParams bannerParams = new FrameLayout.LayoutParams(-1, bannerHeight);
+                  bannerParams.gravity = Gravity.BOTTOM;
+                  rootLayout.addView(bannerView, bannerParams);
+                  bannerView.load();
+              }
+
+              private void loadRewardedAd() {
+                  UnityAds.load(REWARDED_PLACEMENT, new IUnityAdsLoadListener() {
+                      @Override
+                      public void onUnityAdsAdLoaded(String placementId) {
+                          isRewardedLoaded = true;
+                      }
+
+                      @Override
+                      public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) {
+                          isRewardedLoaded = false;
+                          handler.postDelayed(() -> loadRewardedAd(), 10000);
+                      }
+                  });
+              }
+
+              private void loadInterstitialAd() {
+                  UnityAds.load(INTERSTITIAL_PLACEMENT, new IUnityAdsLoadListener() {
+                      @Override
+                      public void onUnityAdsAdLoaded(String placementId) {
+                          isInterstitialLoaded = true;
+                      }
+
+                      @Override
+                      public void onUnityAdsFailedToLoad(String placementId, UnityAds.UnityAdsLoadError error, String message) {
+                          isInterstitialLoaded = false;
+                          handler.postDelayed(() -> loadInterstitialAd(), 15000);
+                      }
+                  });
               }
 
               private void grantRewardInWeb() {
@@ -407,15 +360,31 @@ jobs:
                   @JavascriptInterface
                   public void showRewarded() {
                       runOnUiThread(() -> {
-                          if (rewardedAd != null && rewardedAd.isReady()) {
-                              rewardedAd.show();
+                          if (isRewardedLoaded) {
+                              isRewardedLoaded = false;
+                              UnityAds.show(MainActivity.this, REWARDED_PLACEMENT, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
+                                  @Override
+                                  public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
+                                      loadRewardedAd();
+                                  }
+
+                                  @Override
+                                  public void onUnityAdsShowStart(String placementId) {}
+
+                                  @Override
+                                  public void onUnityAdsShowClick(String placementId) {}
+
+                                  @Override
+                                  public void onUnityAdsShowComplete(String placementId, UnityAds.UnityAdsShowCompletionState state) {
+                                      if (state.equals(UnityAds.UnityAdsShowCompletionState.COMPLETED)) {
+                                          grantRewardInWeb();
+                                      }
+                                      loadRewardedAd();
+                                  }
+                              });
                           } else {
-                              Toast.makeText(MainActivity.this, "Requesting ad from server...", Toast.LENGTH_SHORT).show();
-                              if (rewardedAd != null) {
-                                  rewardedAd.load();
-                              } else {
-                                  preloadRewardedAd();
-                              }
+                              Toast.makeText(MainActivity.this, "Loading ad, please try in 3 seconds...", Toast.LENGTH_SHORT).show();
+                              loadRewardedAd();
                           }
                       });
                   }
@@ -423,14 +392,27 @@ jobs:
                   @JavascriptInterface
                   public void showInterstitial() {
                       runOnUiThread(() -> {
-                          if (interstitialAd != null && interstitialAd.isReady()) {
-                              interstitialAd.show();
+                          if (isInterstitialLoaded) {
+                              isInterstitialLoaded = false;
+                              UnityAds.show(MainActivity.this, INTERSTITIAL_PLACEMENT, new UnityAdsShowOptions(), new IUnityAdsShowListener() {
+                                  @Override
+                                  public void onUnityAdsShowFailure(String placementId, UnityAds.UnityAdsShowError error, String message) {
+                                      loadInterstitialAd();
+                                  }
+
+                                  @Override
+                                  public void onUnityAdsShowStart(String placementId) {}
+
+                                  @Override
+                                  public void onUnityAdsShowClick(String placementId) {}
+
+                                  @Override
+                                  public void onUnityAdsShowComplete(String placementId, UnityAds.UnityAdsShowCompletionState state) {
+                                      loadInterstitialAd();
+                                  }
+                              });
                           } else {
-                              if (interstitialAd != null) {
-                                  interstitialAd.load();
-                              } else {
-                                  preloadInterstitialAd();
-                              }
+                              loadInterstitialAd();
                           }
                       });
                   }
@@ -454,8 +436,10 @@ jobs:
               @Override
               protected void onDestroy() {
                   handler.removeCallbacksAndMessages(null);
-                  if (inMobiBanner != null) inMobiBanner.destroy();
-                  if (inMobiNative != null) inMobiNative.destroy();
+                  if (bannerView != null) {
+                      bannerView.destroy();
+                      bannerView = null;
+                  }
                   if (mainWebView != null) mainWebView.destroy();
                   super.onDestroy();
               }
