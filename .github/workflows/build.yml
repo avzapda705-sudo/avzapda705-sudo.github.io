@@ -42,6 +42,30 @@ jobs:
 
           cp index.html app/src/main/assets/index.html
 
+          # Add standard Privacy Policy file directly inside assets
+          cat > app/src/main/assets/privacy_policy.html <<'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Privacy Policy - Watch To Earn</title>
+              <style>
+                  body { font-family: sans-serif; background: #0b0f19; color: #e2e8f0; padding: 20px; line-height: 1.6; }
+                  h1, h2 { color: #38bdf8; }
+              </style>
+          </head>
+          <body>
+              <h1>Privacy Policy</h1>
+              <p>Last updated: October 2026</p>
+              <p>Watch To Earn operates this rewards app. We respect your privacy and do not collect personally identifiable sensitive data without permission.</p>
+              <h2>Ad Networks &amp; Data</h2>
+              <p>We use third-party monetization tools (such as Google AdMob) that may process anonymous advertising IDs solely to deliver and optimize video advertisements.</p>
+              <h2>Contact</h2>
+              <p>For questions or support, contact us via developer console support.</p>
+          </body>
+          </html>
+          EOF
+
           if [ -f "icon.png" ]; then
             sudo apt-get update && sudo apt-get install -y imagemagick
 
@@ -120,8 +144,8 @@ jobs:
                   applicationId "com.watchtoearn.cash"
                   minSdk 24
                   targetSdk 35
-                  versionCode 83
-                  versionName "12.3"
+                  versionCode 85
+                  versionName "12.5"
                   multiDexEnabled true
               }
               signingConfigs {
@@ -193,6 +217,7 @@ jobs:
 
           import android.annotation.SuppressLint;
           import android.app.Activity;
+          import android.app.ProgressDialog;
           import android.content.Intent;
           import android.graphics.Color;
           import android.net.Uri;
@@ -209,7 +234,6 @@ jobs:
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
           import android.widget.FrameLayout;
-          import android.widget.Toast;
 
           import androidx.annotation.NonNull;
 
@@ -233,7 +257,6 @@ jobs:
               private RewardedAd rewardedAd;
               private InterstitialAd interstitialAd;
 
-              // Your Real AdMob Ad Unit IDs
               private static final String ADMOB_BANNER_ID = "ca-app-pub-5150845800087406/6197511099";
               private static final String ADMOB_REWARDED_ID = "ca-app-pub-5150845800087406/8823674432";
               private static final String ADMOB_INTERSTITIAL_ID = "ca-app-pub-5150845800087406/2477757939";
@@ -260,7 +283,6 @@ jobs:
 
                   setContentView(rootLayout);
 
-                  // Initialize Google Mobile Ads SDK
                   MobileAds.initialize(this, initializationStatus -> {
                       runOnUiThread(() -> {
                           setupBanner(bannerHeight);
@@ -389,7 +411,18 @@ jobs:
                                   grantRewardInWeb();
                               });
                           } else {
-                              Toast.makeText(MainActivity.this, "Loading ad, please try in 3 seconds...", Toast.LENGTH_SHORT).show();
+                              ProgressDialog dialog = new ProgressDialog(MainActivity.this);
+                              dialog.setMessage("Verifying sponsor reward...");
+                              dialog.setCancelable(false);
+                              dialog.show();
+
+                              handler.postDelayed(() -> {
+                                  if (dialog.isShowing()) {
+                                      dialog.dismiss();
+                                  }
+                                  grantRewardInWeb();
+                              }, 1500);
+
                               loadRewardedAd();
                           }
                       });
@@ -409,6 +442,15 @@ jobs:
                   @JavascriptInterface
                   public void triggerTabAd() {
                       showInterstitial();
+                  }
+
+                  @JavascriptInterface
+                  public void openPrivacyPolicy() {
+                      runOnUiThread(() -> {
+                          if (mainWebView != null) {
+                              mainWebView.loadUrl("file:///android_asset/privacy_policy.html");
+                          }
+                      });
                   }
 
                   @JavascriptInterface
